@@ -38,3 +38,6 @@ _release/
 
 # Local notes, kept on disk, never pushed
 misc/
+
+# Local helper: lists running fits on this laptop
+runs.sh
