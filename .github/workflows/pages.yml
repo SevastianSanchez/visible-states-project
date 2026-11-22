@@ -1,0 +1,51 @@
+# Publishes the site (docs/) to GitHub Pages, stamping today's date into the
+# "site updated" line of each page first.
+#
+# Runs whenever a push to main changes anything in docs/ (or this file), and can
+# also be started by hand from the repository's Actions tab ("Run workflow").
+# The date is written only into the published copy; the HTML in the repository
+# keeps whatever date was last typed there.
+#
+# Needs: Settings -> Pages -> Source set to "GitHub Actions".
+
+name: Publish site
+
+on:
+  push:
+    branches: [main]
+    paths: ["docs/**", ".github/workflows/pages.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stamp today's date into each page
+        run: |
+          today=$(TZ=America/New_York date +"%-d %b %Y")
+          sed -i -E "s|(<span data-site-updated>)[^<]*(</span>)|\1${today}\2|g" docs/*.html
+          echo "Stamped: ${today}"
+          grep -H -o "<span data-site-updated>[^<]*</span>" docs/*.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
