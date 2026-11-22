@@ -104,7 +104,7 @@ msg("done in ", round(as.numeric(difftime(Sys.time(), t0, units="mins")),1), " m
 
 # data.table::dcast named explicitly: packages.R attaches reshape2, which masks
 # dcast and returns a plain data.frame, so the := calls below would fail. Same
-# trap that irt_prep.R used to document.
+# load-order trap.
 tab <- data.table::dcast(res, goal + train + test ~ kind, value.var = "auc",
                          fun.aggregate = mean)
 tab[, lift := round(real - null, 3)][, `:=`(real = round(real,3), null = round(null,3))]
