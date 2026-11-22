@@ -1,0 +1,5 @@
+step,rule,series
+0,series in the UN exports with a value in 2015-2023,665
+1,drop series reported in 2% or fewer of country-years,637
+2,drop series reported in 98% or more of country-years,607
+3,collapse duplicate series (same measurement recorded twice),524

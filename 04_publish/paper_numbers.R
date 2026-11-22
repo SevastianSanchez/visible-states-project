@@ -1,6 +1,8 @@
 # ==============================================================================
 # paper_numbers.R
 #
+# MAINTAINER ONLY. Not needed to reproduce the scores.
+#
 # Every figure the measurement paper quotes, recomputed from the current build,
 # in the order the paper uses them. Run this after any rebuild of the index and
 # reconcile the draft against the output; a number in the paper that this script
@@ -8,7 +10,7 @@
 #
 # OUTPUT  04_publish/paper_numbers.txt (and the console)
 # ==============================================================================
-source(here::here("functions/packages.R"))
+source(here::here("packages.R"))
 library(here); suppressPackageStartupMessages(library(data.table))
 
 con <- file(here("04_publish/paper_numbers.txt"), open = "wt")
@@ -16,11 +18,11 @@ say <- function(...) { cat(..., "\n", sep = ""); cat(..., "\n", sep = "", file =
 
 tw  <- fread(here("01_data/vsi_scores/vsi/irt_vsi_scores.csv"))
 lg  <- fread(here("01_data/vsi_scores/vsi/irt_vsi_run_log.csv"))
-# Covariates from their original sources (02_processing/build_country_covariates.R),
+# Covariates from their original sources (02_processing/extract_covariates.R),
 # and the count-based measures from the repo's own cleaned SDG data.
 cv  <- fread(here("01_data/processed/country_covariates.csv"))[, .(iso3, year, income_level, gdp_pc,
                                                                      spi_overall, spi_overall_mod)]
-cnt <- unique(fread(here("01_data/processed/goal_lvl_dv_data.csv"))[scope == "overall", .(iso3, year,
+cnt <- unique(fread(here("01_data/processed/count_measures/goal_lvl_dv_data.csv"))[scope == "overall", .(iso3, year,
                                        dv_n_observations_pct_baseline,
                                        dv_n_observations_stable_pct_baseline,
                                        dv_n_observations_pct_goalbase,
@@ -66,7 +68,7 @@ say("modified SPI (pillars 1,2,4,5)  spearman ", r(d$vsi, d$spi_overall_mod, "sp
 say("unmodified SPI                  pearson  ", r(d$vsi, d$spi_overall),
     " | n ", sum(complete.cases(d$vsi, d$spi_overall)))
 say("(the by-pillar table and HRV come from validate_vsi_external.R ->")
-say(" 03_measures/vsi/checks/output/vsi_external_validity.csv)")
+say(" 03_measures/vsi/validate_measure/output/vsi_external_validity.csv)")
 
 say("\n=== SECTION 7.2: known-groups ===")
 inc <- d[!is.na(income_level), .(mean = round(mean(vsi), 2), n = .N), by = income_level]

@@ -47,7 +47,7 @@ Machine-readable metadata is in [CITATION.cff](CITATION.cff). Code is MIT-licens
 | Source | Use |
 |---|---|
 | UN SDG Global Database, 2015–2023 (665 series, 197 geographies, ~1.3M observations) | The measure: reported vs. missing observations by country, year and series |
-| World Bank Statistical Performance Indicators (SPI); HRV Transparency Index | External validation (dated snapshots in `01_data/raw/snapshots/`) |
+| World Bank Statistical Performance Indicators (SPI); HRV Transparency Index | External validation (dated downloads in `01_data/raw/covariates/`) |
 
 The cleaned tables, their grain, keys and every column are documented in the **[interactive data dictionary](https://sevastiansanchez.github.io/visible-states-project/data_dictionary.html)** (also available as [markdown](01_data/processed/README.md)).
 
@@ -56,60 +56,60 @@ The cleaned tables, their grain, keys and every column are documented in the **[
 The top level reads in run order: data → processing → measures → publish.
 
 ```
-01_data/        raw/ (never edited) · processed/ (written by 02) · vsi_scores/ (written by 03)
-02_processing/  UN exports → the 524-series response matrix
-03_measures/    vsi/ · vsi_goal/ · vsi_goal_relative/ — each score's build script and its checks/
-04_publish/     the site's data files and the measurement paper's numbers
-functions/      sourced by other scripts, never run alone
+01_data/        raw/ (never edited) · intermediate/ (not on GitHub) · processed/ (written by 02) · vsi_scores/ (written by 03)
+02_processing/  UN exports → the 524-series grid the models fit, in five numbered steps
+03_measures/    vsi/ · vsi_goal/ · vsi_goal_relative/ — each score's build script and its validate_measure/
+04_publish/     the site's data files and the measurement paper's numbers (maintainer only)
+rules.R         the fixed numbers every script uses: years, the 2–98% cutoffs, the 10-series minimum, held goals
+packages.R      installs and loads the packages
 ```
 
-**Data lives only in `01_data/`.** Scripts that validate something sit in a `checks/`
-folder beside what they validate, and write what they find to `checks/output/`.
-**Nothing in a `checks/output/` folder is ever read as an input.** Open a measure's
-folder and you see how it is built, how it is tested, and what the tests found.
+**Data lives only in `01_data/`.** Each stage keeps its functions in its own
+`functions/` folder, sourced and never run alone. `02_processing/05_validate_data_sdg.R`
+validates the data before any model runs and stops if a check fails. Each measure's
+`validate_measure/` folder tests the measure after it is fitted, and writes what it
+finds to `validate_measure/output/`. `02_processing/diagnostics/` holds reports run by
+hand. **Nothing in an `output/` folder is ever read as an input.**
 
 | Folder | What | Run order |
 |---|---|---|
-| `01_data/raw/` | The UN SDG goal exports (310 MB, untracked; see Reproducing), `sdg_update_info.xlsx`, dated snapshots (SPI and HRV for validation; World Bank income groups and GDP per capita, pulled by `build_country_covariates.R`), with a `_manifest.csv` of pull dates | |
-| `01_data/processed/` | Cleaned UN data, series list, variant map, stability, provenance, and `country_covariates.csv` (names, income group, GDP per capita, SPI per country-year). Data dictionary in its `README.md` | |
+| `01_data/raw/` | `un_sdg_exports/`: the 17 UN SDG goal exports (310 MB, not on GitHub; see Reproducing) and the UN's update log `sdg_update_info.xlsx`. `covariates/`: dated downloads of World Bank income groups and GDP per capita, SPI and HRV, with a `_manifest.csv` of pull dates | |
+| `01_data/intermediate/` | Working files passed from step 01 to 02 to 03. Rebuilt by running them; not on GitHub | |
+| `01_data/processed/` | Cleaned UN rows, the full and model grids, the series list with stability, the duplicate-series map, each model series' goal, the series count after each rule, provenance, `country_covariates.csv`, and `count_measures/` (the count-based measures that came before the index). Data dictionary in its `README.md` | |
 | `01_data/vsi_scores/` | Scores, fits and series parameters: `vsi/` (`vsi`), `vsi_goal/` (`vsi_goal`), `vsi_goal_relative/` (`vsi_goal_relative`, new in v1.4.0) | |
-| `02_processing/` | | 1 `extract_SDG_series_data_2015_2023.R` · 2 `build_variant_map.R` (**must run before any fit**) · 3 `build_series_provenance.R` · `build_country_covariates.R` (income groups, GDP and SPI from their original sources; `REFRESH=1` re-pulls) · `build_series_stability.R`, `build_hrv_snapshot.R` as needed · checks: `check_series_coverage.R`, `collinear_series_report.R` |
-| `03_measures/vsi/` | The overall index | 4 `build_irt_vsi.R` · check: `validate_vsi_external.R` |
-| `03_measures/vsi_goal/` | One score per goal | 5 `build_irt_vsi_goal.R` · checks: `validate_vsi_goal_heldout.R` (~13 min), `validate_vsi_goal_bootstrap.R` (~98 min on 8 cores) |
-| `03_measures/vsi_goal_relative/` | A goal net of the country's own overall level | `build_irt_vsi_goal_relative.R` (long, checkpointed, resumes) · checks: `validate_vsi_goal_relative_heldout.R` (~2.5 h), `validate_vsi_goal_relative_bootstrap.R` (~4.7 h, checkpointed) |
-| `04_publish/` | | `build_docs_data.R` → `docs/` · `paper_numbers.R` → `paper_numbers.txt`, every figure the measurement paper quotes |
-| `functions/` | `packages.R`, `irt_prep.R` (builds the one 524-series response matrix every fit uses, and halts if the variant map is missing or stale), `bifactor_scorer.R` | |
+| `02_processing/` | | 1 `01_extract_sdg.R` · 2 `02_clean_sdg.R` · 3 `03_wrangle_sdg.R` · 4 `04_select_model_series_sdg.R` (the 2–98% rule, duplicate series, one goal per series) · 5 `05_validate_data_sdg.R` (**must pass before any fit**) · then `extract_covariates.R` (income groups, GDP, SPI, HRV; `REFRESH=1` re-pulls), `build_count_measures.R`, `build_series_provenance.R` · diagnostics: `check_series_coverage.R`, `collinear_series_report.R`, `check_subgroup_only_cells.R` |
+| `03_measures/vsi/` | The overall index | 6 `build_irt_vsi.R` · validate: `validate_vsi_external_measures.R` |
+| `03_measures/vsi_goal/` | One score per goal | 7 `build_irt_vsi_goal.R` · validate: `validate_vsi_goal_heldout.R` (~13 min), `validate_vsi_goal_bootstrap.R` (~98 min on 8 cores) |
+| `03_measures/vsi_goal_relative/` | A goal net of the country's own overall level | `build_irt_vsi_goal_relative.R` (long, checkpointed, resumes) · validate: `validate_vsi_goal_relative_heldout.R` (~2.5 h), `validate_vsi_goal_relative_bootstrap.R` (~4.7 h, checkpointed) |
+| `03_measures/functions/` | `model_data.R` (turns the saved grids into what every model reads, so all fit the identical matrix), `bifactor_scorer.R` | |
+| `04_publish/` | Maintainer only; not needed to reproduce the scores | `build_docs_data.R` → `docs/` · `paper_numbers.R` → `paper_numbers.txt`, every figure the measurement paper quotes · `build_release_bundle.R` → the Zenodo files |
 | `docs/` | The published site: [Visible States Project](https://sevastiansanchez.github.io/visible-states-project/), the interactive data dictionary, and the published copy of the scores. GitHub Pages builds it from `main` | |
 | `releases/` | What was deposited at Zenodo, one folder per version. Never edited | |
 
-`run_all.R` runs the quick stages in order; refits and checks only on request.
+`run_all.R` runs processing and the quick checks in order; refits only on request.
+It never publishes and never runs the diagnostics.
 
-Steps 4 and 5 are independent of each other; both read only `01_data/processed/`.
+Steps 6 and 7 are independent of each other; both read only `01_data/processed/`.
 Every fit setting comes from `METHODS_LOG.md`: **read it before changing one.**
 One script writes each file. All paths go through `here()`, so any script runs
 whatever the working directory is.
 
-**What is running right now:** `bash runs.sh` lists every R process, how long it
-has run, and the last line of recent logs, and flags `ORPHAN` workers (whose
-parent died) and `STALE` runs (over six hours). `bash runs.sh --kill` stops those,
-after asking. Parallel workers do not die with their parent, so check before
-launching anything and again after stopping anything.
-
 ## Reproducing
 
-Dependencies are handled by `functions/packages.R`, which installs anything
+Dependencies are handled by `packages.R`, which installs anything
 missing and then loads everything. Scripts source it directly.
 
-**Everything runs from a fresh clone except the extract.** Every input the other
+**Everything runs from a fresh clone except steps 01–03.** Every input the later
 scripts need is tracked, including the cleaned UN data
-(`01_data/processed/raw_data.csv.gz`), so you do not have to rebuild it to run
-anything downstream.
+(`01_data/processed/sdg_full_data.csv.gz`) and the full grid
+(`01_data/processed/grid_all_series.rds`), so you do not have to rebuild them to
+run anything downstream.
 
 The UN SDG goal exports are 310 MB, too large to track. To rebuild from source,
 download them from the [UN SDG Global Database](https://unstats.un.org/sdgs/dataportal)
-into `01_data/raw/un_sdg_exports/`, then run
-`02_processing/extract_SDG_series_data_2015_2023.R`. Nothing else requires that
-download.
+into `01_data/raw/un_sdg_exports/`, then run `02_processing/01_extract_sdg.R`,
+`02_clean_sdg.R` and `03_wrangle_sdg.R` (or `Rscript run_all.R`, which runs them when
+the exports are there). Nothing else requires that download.
 
 ## Related work
 

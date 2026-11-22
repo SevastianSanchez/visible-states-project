@@ -180,6 +180,7 @@
     <p class="eyebrow"><a href="./" style="color:var(--accent);text-decoration:none">← Visible States Project</a> · data dictionary</p>
     <h1>SDG reporting data, mapped</h1>
     <p class="lede">Every file behind the Visible States Index: the three score files you can download, and the tables in the repository they are built from. For each, its grain, its keys and what every column means. Every table keys on <code>iso3&nbsp;+&nbsp;year</code>.</p>
+    <p class="lede" style="font-size:14px;color:var(--ink-3);margin-top:10px">v1.4.0 &middot; site updated 22 Nov 2026</p>
 
     <div class="legend">
       <div class="grp">
@@ -214,16 +215,16 @@
   <section class="lineage">
     <h2>Lineage — everything derives from one table</h2>
     <div class="flow">
-      <div class="src-node">raw_data<br><span style="font-weight:400;font-size:11px;color:var(--ink-3)">1 row = 1 observation</span></div>
+      <div class="src-node">sdg_full_data<br><span style="font-weight:400;font-size:11px;color:var(--ink-3)">1 row = 1 observation</span></div>
       <div class="arrow">→</div>
       <div class="derived">
         <div class="dnode"><span class="dot" style="background:var(--r-supp)"></span>agg_series_depth <span style="color:var(--ink-3)">· reported or not, per country, series and year</span></div>
-        <div class="dnode"><span class="dot" style="background:var(--r-supp)"></span>series_list · series_variant_map <span style="color:var(--ink-3)">· goal of each series; which series repeat another</span></div>
-        <div class="dnode"><span class="dot" style="background:var(--r-ref)"></span>series_provenance_nature · series_stability · geo_exclusions <span style="color:var(--ink-3)">· reference</span></div>
+        <div class="dnode"><span class="dot" style="background:var(--r-supp)"></span>series_stability_list · grid_all_series · series_variant_map · grid_model_series · series_goal <span style="color:var(--ink-3)">· what each series is; the yes/no grids; which series repeat another; each model series' goal</span></div>
+        <div class="dnode"><span class="dot" style="background:var(--r-ref)"></span>series_provenance_nature · filter_log · geo_exclusions <span style="color:var(--ink-3)">· reference</span></div>
         <div class="dnode"><span class="dot" style="background:var(--accent)"></span>vsi · vsi_goal · vsi_goal_relative <span style="color:var(--ink-3)">· the scores, fitted on 524 series</span></div>
       </div>
     </div>
-    <p style="margin:14px 0 0;font-size:13px;color:var(--ink-3)">665 series → 607 after dropping those reported in under 2% or over 98% of country-years → 524 after counting repeated series once. <span class="mono">country_covariates</span> is the one table not built from <span class="mono">raw_data</span>: it brings in income groups and the comparison benchmarks from the World Bank and HRV.</p>
+    <p style="margin:14px 0 0;font-size:13px;color:var(--ink-3)">665 series → 607 after dropping those reported in 2% or fewer, or 98% or more, of country-years → 524 after counting repeated series once (the count after each rule is in <span class="mono">filter_log</span>). <span class="mono">country_covariates</span> is the one table not built from <span class="mono">sdg_full_data</span>: it brings in income groups and the comparison benchmarks from the World Bank and HRV.</p>
   </section>
 </div>
 
@@ -358,7 +359,7 @@
       <div class="ds-rail" style="background:var(--r-source)"></div>
       <div class="ds-head">
         <div class="ds-title">
-          <span class="name">raw_data</span>
+          <span class="name">sdg_full_data</span>
           <span class="role source">source</span>
         </div>
         <p class="ds-desc">The cleaned UN SDG Global Database: one row per observation (country × series × year × breakdown). Every other table here derives from it. Filter it to build your own cuts.</p>
@@ -421,7 +422,7 @@
           <tr><td class="col"><span class="cn">applicable</span></td><td class="type"><span class="ty">lgl</span></td><td class="desc">The series applies here: not every empty cell is marked structural.</td></tr>
 
           <tr class="grp-row"><td colspan="3"><span class="gl">what the cell holds</span></td></tr>
-          <tr><td class="col"><span class="cn">n_disagg_rows</span></td><td class="type"><span class="ty">int</span></td><td class="desc">Breakdowns the country published (rows in <code>raw_data</code>).</td></tr>
+          <tr><td class="col"><span class="cn">n_disagg_rows</span></td><td class="type"><span class="ty">int</span></td><td class="desc">Breakdowns the country published (rows in <code>sdg_full_data</code>).</td></tr>
           <tr><td class="col"><span class="cn">n_country_rows</span> / <span class="cn">n_agency_rows</span></td><td class="type"><span class="ty">int</span></td><td class="desc">Of those, by producer (<code>C</code>/<code>CA</code> vs <code>E</code>/<code>M</code>/<code>G</code>).</td></tr>
           <tr><td class="col"><span class="cn">nature_codes</span></td><td class="type"><span class="ty">chr</span></td><td class="desc">The nature codes present, joined with "/", e.g. <code>C/E</code>. <span class="na">NA</span> where the cell is all empty.</td></tr>
           <tr><td class="col"><span class="cn">n_declared_missing</span></td><td class="type"><span class="ty">int</span></td><td class="desc">Empty cells here (split in <code>n_missing_structural</code>, <code>n_missing_suppressed</code>).</td></tr>
@@ -441,7 +442,7 @@
           <span class="name">series_variant_map</span>
           <span class="role supp">input</span>
         </div>
-        <p class="ds-desc">Which series repeat another. Some measurements are published twice, for example stunting as a percentage and as a count. Kept, they would let a country earn two points for one act of reporting. A series is collapsed into its cluster only when it has the same reported/not pattern in every country-year <em>and</em> measures the same thing; the 607 → 524 step. Built by <span class="mono">build_variant_map.R</span>; every fit halts if it is missing or stale.</p>
+        <p class="ds-desc">Which series repeat another. Some measurements are published twice, for example stunting as a percentage and as a count. Kept, they would let a country earn two points for one act of reporting. A series is collapsed into its cluster only when it has the same reported/not pattern in every country-year <em>and</em> measures the same thing; the 607 → 524 step. Built by <span class="mono">04_select_model_series_sdg.R</span>; <span class="mono">05_validate_data_sdg.R</span> stops the run if a collapsed group does not move as one.</p>
         <div class="meta">
           <div class="m"><span class="ml">grain</span><span class="mv">one series</span></div>
           <div class="m"><span class="ml">key</span><span class="mv"><span class="k">series_code</span></span></div>
@@ -465,10 +466,10 @@
       <div class="ds-rail" style="background:var(--r-supp)"></div>
       <div class="ds-head">
         <div class="ds-title">
-          <span class="name">series_list</span>
+          <span class="name">series_stability_list</span>
           <span class="role supp">input</span>
         </div>
-        <p class="ds-desc">What each series <em>is</em>, and which goal it belongs to. One row per goal-target-indicator-series path: 726 rows for 665 series, since a series can sit under more than one path. A series under several goals is assigned to the goal with the fewest series.</p>
+        <p class="ds-desc">What each series <em>is</em>, which goals it sits under, and its lifespan. One row per goal-target-indicator-series path: 726 rows for 665 series, since a series can sit under more than one path. The models read <span class="mono">series_code</span> and <span class="mono">goal</span> from it. The SDG framework grew during 2015&ndash;2023, so some series did not exist in early years; the 409 series live in every year form the <em>stable core</em>, used by the count-based measures. The index does not use the stability columns.</p>
         <div class="meta">
           <div class="m"><span class="ml">grain</span><span class="mv">goal-target-indicator-series</span></div>
           <div class="m"><span class="ml">key</span><span class="mv"><span class="k">series_code</span> (+ path)</span></div>
@@ -479,11 +480,54 @@
         <thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead>
         <tbody>
           <tr><td class="col"><span class="cn">goal · target · indicator · series_code · series_description</span></td><td class="type"><span class="ty">mixed</span></td><td class="desc">The SDG path and series identity <span class="badge key">KEY</span>.</td></tr>
-          <tr><td class="col"><span class="cn">first_year · last_year · n_years_live</span></td><td class="type"><span class="ty">int</span></td><td class="desc">When the series has data.</td></tr>
-          <tr><td class="col"><span class="cn">is_stable_core · starts_late · ends_early · status</span></td><td class="type"><span class="ty">lgl/chr</span></td><td class="desc">Lifespan flags, from <code>series_stability</code>.</td></tr>
+          <tr><td class="col"><span class="cn">first_year · last_year · n_years_live</span></td><td class="type"><span class="ty">int</span></td><td class="desc">When the series has data. <code>n_years_live</code> counts years present, so gaps show here.</td></tr>
+          <tr><td class="col"><span class="cn">is_stable_core · starts_late · ends_early · status</span></td><td class="type"><span class="ty">lgl/chr</span></td><td class="desc">Lifespan flags. Filter on <code>ends_early</code> for every discontinued series.</td></tr>
           <tr><td class="col"><span class="cn">n_observations · _country · _agency</span></td><td class="type"><span class="ty">int</span></td><td class="desc">Published values for the series, split by producer.</td></tr>
           <tr><td class="col"><span class="cn">n_declared_missing · n_missing_structural · n_missing_suppressed</span></td><td class="type"><span class="ty">int</span></td><td class="desc">Empty cells for the series, by reason.</td></tr>
           <tr><td class="col"><span class="cn">pct_country_produced</span></td><td class="type"><span class="ty">dbl</span></td><td class="desc">Share country-produced: 2% to 100% across series.</td></tr>
+          <tr><td class="col"><span class="cn">max_countries</span></td><td class="type"><span class="ty">int</span></td><td class="desc">The most countries reporting the series in any year.</td></tr>
+          <tr><td class="col"><span class="cn">log_first_seen · log_added_date · log_removed_date · n_log_events</span></td><td class="type"><span class="ty">Date/int</span></td><td class="desc">Supporting dates from the UN update log.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section class="ds">
+      <div class="ds-rail" style="background:var(--r-supp)"></div>
+      <div class="ds-head">
+        <div class="ds-title">
+          <span class="name">grid_all_series · grid_model_series</span>
+          <span class="role supp">input</span>
+        </div>
+        <p class="ds-desc">The yes/no grids. One row per country-year, one column per series: 1 if at least one value was published that year under any breakdown, 0 if none. <span class="mono">grid_all_series</span> has all 665 series and is used for descriptive work; <span class="mono">grid_model_series</span> keeps the 524 that pass the 2&ndash;98% rule and the duplicate collapse, and is what the models fit.</p>
+        <div class="meta">
+          <div class="m"><span class="ml">grain</span><span class="mv">country × year</span></div>
+          <div class="m"><span class="ml">key</span><span class="mv"><span class="k">iso3</span> + year</span></div>
+          <div class="m"><span class="ml">rows</span><span class="mv">1,773</span></div>
+          <div class="m"><span class="ml">columns</span><span class="mv">iso3, year, then 665 or 524 series</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="ds">
+      <div class="ds-rail" style="background:var(--r-supp)"></div>
+      <div class="ds-head">
+        <div class="ds-title">
+          <span class="name">series_goal</span>
+          <span class="role supp">input</span>
+        </div>
+        <p class="ds-desc">Each model series and the one goal it counts toward. A series listed under several goals goes to whichever of its own goals has the fewest series, so no goal is starved by an arbitrary choice.</p>
+        <div class="meta">
+          <div class="m"><span class="ml">grain</span><span class="mv">one model series</span></div>
+          <div class="m"><span class="ml">key</span><span class="mv"><span class="k">series_code</span></span></div>
+          <div class="m"><span class="ml">rows</span><span class="mv">524</span></div>
+        </div>
+      </div>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead>
+        <tbody>
+          <tr><td class="col"><span class="cn">series_code</span></td><td class="type"><span class="ty">chr</span></td><td class="desc"><span class="badge key">KEY</span></td></tr>
+          <tr><td class="col"><span class="cn">goals_listed</span></td><td class="type"><span class="ty">chr</span></td><td class="desc">Every goal the series sits under, e.g. <code>1/11/13</code>.</td></tr>
+          <tr><td class="col"><span class="cn">goal_assigned</span></td><td class="type"><span class="ty">int</span></td><td class="desc">The goal it counts toward.</td></tr>
         </tbody>
       </table></div>
     </section>
@@ -518,24 +562,22 @@
       <div class="ds-rail" style="background:var(--r-ref)"></div>
       <div class="ds-head">
         <div class="ds-title">
-          <span class="name">series_stability</span>
+          <span class="name">filter_log</span>
           <span class="role ref">reference</span>
         </div>
-        <p class="ds-desc">Each series' lifespan, from the data and the UN's update log. The SDG framework grew during 2015&ndash;2023, so some series simply did not exist in early years. The 409 series live in every year form the <em>stable core</em>, used to check that the index is not driven by framework growth. Built by <span class="mono">build_series_stability.R</span>.</p>
+        <p class="ds-desc">The series count after each rule that chooses the model series: 665 → 637 → 607 → 524.</p>
         <div class="meta">
-          <div class="m"><span class="ml">grain</span><span class="mv">one series</span></div>
-          <div class="m"><span class="ml">key</span><span class="mv"><span class="k">series_code</span></span></div>
-          <div class="m"><span class="ml">rows</span><span class="mv">665</span></div>
+          <div class="m"><span class="ml">grain</span><span class="mv">one rule</span></div>
+          <div class="m"><span class="ml">key</span><span class="mv"><span class="k">step</span></span></div>
+          <div class="m"><span class="ml">rows</span><span class="mv">4</span></div>
         </div>
       </div>
       <div class="tbl-scroll"><table>
         <thead><tr><th>Column</th><th>Type</th><th>Description</th></tr></thead>
         <tbody>
-          <tr><td class="col"><span class="cn">series_code</span></td><td class="type"><span class="ty">chr</span></td><td class="desc">One row each <span class="badge key">KEY</span>.</td></tr>
-          <tr><td class="col"><span class="cn">first_year · last_year · n_years_live</span></td><td class="type"><span class="ty">int</span></td><td class="desc">Lifespan. <code>n_years_live</code> counts years present, so gaps show here.</td></tr>
-          <tr><td class="col"><span class="cn">total_obs · max_countries</span></td><td class="type"><span class="ty">int</span></td><td class="desc">Reach: total values and the most countries reporting in any year.</td></tr>
-          <tr><td class="col"><span class="cn">is_stable_core · starts_late · ends_early · status</span></td><td class="type"><span class="ty">lgl/chr</span></td><td class="desc">Stability classification.</td></tr>
-          <tr><td class="col"><span class="cn">log_first_seen · log_added_date · log_removed_date · n_log_events</span></td><td class="type"><span class="ty">Date/int</span></td><td class="desc">Supporting dates from the UN update log.</td></tr>
+          <tr><td class="col"><span class="cn">step</span></td><td class="type"><span class="ty">int</span></td><td class="desc">0 = the starting set <span class="badge key">KEY</span>.</td></tr>
+          <tr><td class="col"><span class="cn">rule</span></td><td class="type"><span class="ty">chr</span></td><td class="desc">The rule applied.</td></tr>
+          <tr><td class="col"><span class="cn">series</span></td><td class="type"><span class="ty">int</span></td><td class="desc">Series left after it.</td></tr>
         </tbody>
       </table></div>
     </section>
@@ -573,7 +615,7 @@
           <span class="name">country_covariates</span>
           <span class="role ref">reference</span>
         </div>
-        <p class="ds-desc">Country facts from outside the UN database: the income groups printed with the scores, and the benchmarks the index is checked against. Built by <span class="mono">build_country_covariates.R</span> from dated snapshots of the original sources in <span class="mono">01_data/raw/snapshots/</span>.</p>
+        <p class="ds-desc">Country facts from outside the UN database: the income groups printed with the scores, and the benchmarks the index is checked against. Built by <span class="mono">extract_covariates.R</span> from dated downloads of the original sources in <span class="mono">01_data/raw/covariates/</span>.</p>
         <div class="meta">
           <div class="m"><span class="ml">grain</span><span class="mv">country × year</span></div>
           <div class="m"><span class="ml">key</span><span class="mv"><span class="k">iso3</span> + year</span></div>
@@ -590,19 +632,21 @@
           <tr><td class="col"><span class="cn">spi_overall</span></td><td class="type"><span class="ty">dbl</span></td><td class="desc">World Bank Statistical Performance Indicators, overall score (all five pillars). 1,425 rows.</td></tr>
           <tr><td class="col"><span class="cn">spi_overall_mod</span></td><td class="type"><span class="ty">dbl</span></td><td class="desc">SPI without pillar 3, which partly scores SDG data availability from the same UN database; pillars 1, 2, 4 and 5 at 25% each. The cleaner benchmark. 1,432 rows.</td></tr>
           <tr><td class="col"><span class="cn">hrv · hrv_sd</span></td><td class="type"><span class="ty">dbl</span></td><td class="desc">HRV transparency index, version 2 (Hollyer, Ge, Rosendorff &amp; Vreeland 2024), and its standard deviation. It ends in 2015, so only 149 rows have a value.</td></tr>
+          <tr><td class="col"><span class="cn">spi_p1_use · spi_p2_services · spi_p3_products · spi_p4_sources · spi_p5_infra</span></td><td class="type"><span class="ty">dbl</span></td><td class="desc">The five SPI pillars: data use, services, products, sources, infrastructure. Pillar 3 partly scores SDG data availability from the same UN database as the index.</td></tr>
         </tbody>
       </table></div>
     </section>
 
-    <p style="font-size:13px;color:var(--ink-3);max-width:74ch">The repository also holds two count-based tables, <span class="mono">goal_lvl_dv_data</span> and <span class="mono">agg_series_counts_rc</span>. They are kept for comparison, are not part of the index, and are not documented here.</p>
+    <p style="font-size:13px;color:var(--ink-3);max-width:74ch">The repository also holds two count-based tables in <span class="mono">01_data/processed/count_measures/</span>, <span class="mono">goal_lvl_dv_data</span> and <span class="mono">agg_series_counts_rc</span>, built by <span class="mono">build_count_measures.R</span>. They are kept for comparison, are not part of the index, and are not documented here.</p>
 
   </div>
 </main>
 
 <footer>
   <div class="wrap">
-    <p><span class="mono">extract_SDG_series_data_2015_2023.R</span> → <span class="mono">01_data/processed/</span> → the three fits in <span class="mono">03_measures/</span> → <span class="mono">01_data/vsi_scores/</span>, which also holds each fit's per-series parameters (<span class="mono">*_item_params.csv</span>). UN SDG Global Database, 2015–2023 · 197 geographies · 665 series · downloaded 16 Aug 2026.</p>
-    <p style="margin-top:6px;color:var(--ink-3)">Repository: <a href="https://github.com/SevastianSanchez/visible-states-project" style="color:var(--accent-ink)">github.com/SevastianSanchez/visible-states-project</a></p>
+    <p><span class="mono">02_processing/</span> (steps 01&ndash;05) → <span class="mono">01_data/processed/</span> → the three fits in <span class="mono">03_measures/</span> → <span class="mono">01_data/vsi_scores/</span>, which also holds each fit's per-series parameters (<span class="mono">*_item_params.csv</span>). 2015–2023 · 197 geographies · 665 series.</p>
+    <p style="margin-top:6px;color:var(--ink-3)">Data: UN SDG Global Database, 7 Jul 2026 release, downloaded 16 Aug 2026<br>
+    Sevastian Sanchez &middot; Columbia University &middot; <a href="https://github.com/SevastianSanchez/visible-states-project" style="color:var(--accent-ink)">Source repository</a></p>
     <p style="margin-top:6px;color:var(--ink-3)">Reading a CSV guesses column types; the <span class="mono">.rds</span> copies in the repository keep exact types and column labels.</p>
   </div>
 </footer>

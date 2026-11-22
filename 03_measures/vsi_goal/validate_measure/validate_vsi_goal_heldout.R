@@ -21,10 +21,10 @@
 # came from a higher-scoring country-year than a randomly chosen unreported
 # one. 0.5 is chance. Reported per goal, averaged over splits, against the null.
 #
-# OUTPUT  03_measures/vsi_goal/checks/output/vsi_goal_heldout_raw.csv (one row per goal x
+# OUTPUT  03_measures/vsi_goal/validate_measure/output/vsi_goal_heldout_raw.csv (one row per goal x
 #         split x real/null) and vsi_goal_heldout_validity.csv (per goal).
 #
-# RUN     SPLITS=20 CORES=4 Rscript 03_measures/vsi_goal/checks/validate_vsi_goal_heldout.R   (~13 min)
+# RUN     SPLITS=20 CORES=4 Rscript 03_measures/vsi_goal/validate_measure/validate_vsi_goal_heldout.R   (~13 min)
 #
 # PROVENANCE  Recovered 14 Nov 2026 from the session that ran it (9 Nov 2026, 20 splits on 4 cores, 12.8 min; results in METHODS_LOG.md).
 # The logic is exactly as run. Changed for the repo: file paths only. Its raw output survived and reproduces the logged
@@ -34,7 +34,13 @@ suppressMessages({library(mirt); library(data.table); library(here); library(par
 SPLITS <- as.integer(Sys.getenv("SPLITS", "20"))
 CORES  <- as.integer(Sys.getenv("CORES", "8"))
 ONEGOAL<- Sys.getenv("ONEGOAL", "")
-source(here("functions/irt_prep.R"))
+source(here::here("03_measures/functions/model_data.R"))
+list2env(model_inputs(
+  readRDS(here::here("01_data/processed/grid_all_series.rds")),
+  readRDS(here::here("01_data/processed/grid_model_series.rds")),
+  data.table::fread(here::here("01_data/processed/series_goal.csv")),
+  min_series_per_goal), environment())
+set.seed(20261105)   # the seed the published fits used, so they reproduce exactly
 set.seed(20261109)
 
 auc <- function(score, y) {               # rank-based, ties handled
@@ -59,8 +65,8 @@ score_on <- function(M) {
 one_split <- function(g, k) {
   cs <- colnames(resp)[item_goal == g]
   M  <- resp[, cs, drop = FALSE]; p <- colMeans(M)
-  M  <- M[, p > 0.02 & p < 0.98, drop = FALSE]
-  if (ncol(M) < 10) return(NULL)
+  M  <- M[, filter_prevalence(M, item_lo, item_hi), drop = FALSE]
+  if (ncol(M) < min_series_per_goal) return(NULL)
   n_tr <- max(5L, floor(0.7 * ncol(M)))
   tr   <- sample(ncol(M), n_tr); te <- setdiff(seq_len(ncol(M)), tr)
   if (!length(te)) return(NULL)
@@ -98,7 +104,7 @@ msg("done in ", round(as.numeric(difftime(Sys.time(), t0, units="mins")),1), " m
 
 # data.table::dcast named explicitly: packages.R attaches reshape2, which masks
 # dcast and returns a plain data.frame, so the := calls below would fail. Same
-# trap documented in irt_prep.R.
+# trap that irt_prep.R used to document.
 tab <- data.table::dcast(res, goal + train + test ~ kind, value.var = "auc",
                          fun.aggregate = mean)
 tab[, lift := round(real - null, 3)][, `:=`(real = round(real,3), null = round(null,3))]
@@ -112,6 +118,6 @@ print(tab)
 cat("\nAUC 0.5 = chance. 'null' is the same test with country labels shuffled.\n")
 cat("median real:", round(median(tab$real, na.rm=TRUE),3),
     "| median null:", round(median(tab$null, na.rm=TRUE),3), "\n")
-fwrite(res, here("03_measures/vsi_goal/checks/output/vsi_goal_heldout_raw.csv"))
-fwrite(tab, here("03_measures/vsi_goal/checks/output/vsi_goal_heldout_validity.csv"))
+fwrite(res, here("03_measures/vsi_goal/validate_measure/output/vsi_goal_heldout_raw.csv"))
+fwrite(tab, here("03_measures/vsi_goal/validate_measure/output/vsi_goal_heldout_validity.csv"))
 msg("done.")

@@ -1,6 +1,6 @@
 # =============================================================================
 # DIAGNOSTIC: Series coverage check
-# Companion to 02_processing/extract_SDG_series_data_2015_2023.R
+# Companion to 02_processing/03_wrangle_sdg.R
 # =============================================================================
 #
 # WHY THIS EXISTS
@@ -34,8 +34,8 @@ library(here)
 })
 
 # ---- Paths -------------------------------------------------------------------
-# Run from the project root. raw_data.csv.gz is written by the extract script.
-raw_data_path <- here("01_data/processed/raw_data.csv.gz")
+# Run from the project root. sdg_full_data.csv.gz is written by 03_wrangle_sdg.R.
+raw_data_path <- here("01_data/processed/sdg_full_data.csv.gz")
 stopifnot(file.exists(raw_data_path))
 
 

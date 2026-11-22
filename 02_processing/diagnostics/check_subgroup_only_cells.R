@@ -6,7 +6,7 @@
 #
 # WHY IT MATTERS
 #   A cell counts as reported when at least one published value exists under
-#   any breakdown (functions/irt_prep.R, via agg_series_depth$reported). This
+#   any breakdown (agg_series_depth$reported, 02_processing/03_wrangle_sdg.R). This
 #   check sizes what a stricter "headline total required" rule would change,
 #   and is the source of the figures in the measurement paper's Appendix A
 #   notes (cited 20 Nov 2026).
@@ -25,19 +25,19 @@
 #   headline for some countries and only subgroups for others: 3,087 cells
 #   (0.7%). Hardest hit: ARG 69, PER 59, MKD 55.
 #
-# INPUT   01_data/processed/raw_data.csv.gz
-# OUTPUT  03_measures/vsi/checks/output/subgroup_only_series.csv
+# INPUT   01_data/processed/sdg_full_data.csv.gz
+# OUTPUT  02_processing/diagnostics/output/subgroup_only_series.csv
 #           one row per affected series: cells reported, cells with no
 #           headline row, and whether the series ever has a headline
-#         03_measures/vsi/checks/output/subgroup_only_summary.csv
+#         02_processing/diagnostics/output/subgroup_only_summary.csv
 # ==============================================================================
 library(here)
 library(data.table)
 
-out_dir <- here("03_measures/vsi/checks/output")
+out_dir <- here("02_processing/diagnostics/output")
 dir.create(out_dir, showWarnings = FALSE, recursive = TRUE)
 
-raw <- fread(here("01_data/processed/raw_data.csv.gz"))[!is.na(value)]
+raw <- fread(here("01_data/processed/sdg_full_data.csv.gz"))[!is.na(value)]
 raw[, headline := (is.na(sex) | sex == "BOTHSEX") &
                   (is.na(location) | location == "ALLAREA")]
 

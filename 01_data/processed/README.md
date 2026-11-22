@@ -12,44 +12,53 @@ covers both: the scores and the tables below.
 ## Lineage
 
 ```
-raw_data  (1 row = 1 observation)
+sdg_full_data  (1 row = 1 observation)                                   03_wrangle_sdg.R
    │
+   ├── geo_exclusions             reference: geographies dropped or rolled up
+   ├── series_stability_list      input: what each series is, its goals, and its lifespan
    ├── agg_series_depth           input: reported or not, per country, series and year
-   ├── series_list                input: what each series is, and its goal
-   ├── series_variant_map         input: which series repeat another (607 → 524)
-   ├── series_provenance_nature   reference: who produced each series
-   ├── series_stability           reference: each series' lifespan
-   └── geo_exclusions             reference: geographies dropped or rolled up
+   │      └── grid_all_series   input: 1,773 country-years × 665 series, 1 = reported
+   │             │                                               04_select_model_series_sdg.R
+   │             ├── series_variant_map   input: which series repeat another (607 → 524)
+   │             ├── grid_model_series  input: 1,773 × 524, what the models fit
+   │             ├── series_goal          input: each model series and its one goal
+   │             └── filter_log           reference: the series count after each rule
+   └── series_provenance_nature   reference: who produced each series
 
 country_covariates   reference: income groups and comparison benchmarks (World Bank, SPI, HRV)
+count_measures/      the count-based measures that came before the index (not part of it)
 ```
 
-665 series → 607 after dropping those reported in under 2% or over 98% of country-years
-→ 524 after counting repeated series once (`functions/irt_prep.R`).
+665 series → 607 after dropping those reported in 2% or fewer, or 98% or more, of
+country-years → 524 after counting repeated series once
+(`02_processing/04_select_model_series_sdg.R`; the count after each rule is in `filter_log.csv`).
 
 ## Files at a glance
 
 | Dataset | Role | Grain | Key | Rows | File |
 |---|---|---|---|---|---|
-| `raw_data` | source | one observation | — | 1,307,990 | `.csv.gz` |
+| `sdg_full_data` | source | one observation | — | 1,307,990 | `.csv.gz` |
 | `agg_series_depth` | input | country × series × year | geo_area_code + series_code + year + goal | 508,432 | `.csv.gz` + `.rds` |
-| `series_list` | input | goal-target-indicator-series | series_code (+ path) | 726 | `.csv` |
+| `series_stability_list` | input | goal-target-indicator-series | series_code (+ path) | 726 | `.csv` |
+| `grid_all_series` | input | country × year | iso3 + year | 1,773 (× 665 series) | `.rds` |
 | `series_variant_map` | input | one series | series_code | 607 | `.csv` |
+| `grid_model_series` | input | country × year | iso3 + year | 1,773 (× 524 series) | `.rds` |
+| `series_goal` | input | one model series | series_code | 524 | `.csv` |
+| `filter_log` | reference | one rule | step | 4 | `.csv` |
 | `series_provenance_nature` | reference | one series | SeriesCode | 668 | `.csv` |
-| `series_stability` | reference | one series | series_code | 665 | `.csv` |
 | `geo_exclusions` | reference | one geography | geo_area_code | 63 | `.csv` |
 | `country_covariates` | reference | country × year | iso3 + year | 1,773 | `.csv` |
 
 > The `.rds` copy of `agg_series_depth` keeps exact column types and the `attr()`
 > labels. Reading a `.csv` guesses types and drops the labels.
 
-The folder also holds two count-based tables, `goal_lvl_dv_data` and
-`agg_series_counts_rc`. They are kept for comparison, are not part of the index, and
-are not documented here.
+The subfolder `count_measures/` holds two count-based tables, `goal_lvl_dv_data` and
+`agg_series_counts_rc`, built by `02_processing/build_count_measures.R`. They are kept
+for comparison, are not part of the index, and are not documented here.
 
 ---
 
-## `raw_data` — source
+## `sdg_full_data` — source
 
 The cleaned UN SDG Global Database: one row per observation (country × series × year ×
 breakdown). Every other table here derives from it.
@@ -96,7 +105,7 @@ The other columns describe each cell.
 | `reported` | lgl | At least one published value here. **What the index is built from.** |
 | `reported_country` | lgl | At least one country-produced value (`C`/`CA`). |
 | `applicable` | lgl | The series applies here: not every empty cell is marked structural. |
-| `n_disagg_rows` | int | Breakdowns the country published (rows in `raw_data`). |
+| `n_disagg_rows` | int | Breakdowns the country published (rows in `sdg_full_data`). |
 | `n_country_rows` / `n_agency_rows` | int | Of those, by producer (`C`/`CA` vs `E`/`M`/`G`). |
 | `nature_codes` | chr | Nature codes present, joined with "/", e.g. `C/E`. NA where the cell is all empty. |
 | `n_declared_missing` | int | Empty cells here. |
@@ -107,22 +116,39 @@ The other columns describe each cell.
 
 ---
 
-## `series_list` — input
+## `series_stability_list` — input
 
-What each series *is*, and which goal it belongs to. One row per goal-target-indicator-series
-path: 726 rows for 665 series, since a series can sit under more than one path. A series
-under several goals is assigned to the goal with the fewest series.
+What each series *is*, which goals it sits under, and its lifespan. One row per
+goal-target-indicator-series path: 726 rows for 665 series, since a series can sit under
+more than one path. The models read `series_code` and `goal` from it; a series under
+several goals is assigned to the goal with the fewest series (see `series_goal`).
+
+The SDG framework grew during 2015–2023, so some series did not exist in early years.
+The 409 series live in every year form the **stable core**, used by the count-based
+measures to check for framework growth. The index does not use the stability columns.
 
 **Grain:** goal-target-indicator-series &nbsp;·&nbsp; **Key:** `series_code` (+ path) &nbsp;·&nbsp; **Rows:** 726
 
 | Column | Type | Description |
 |---|---|---|
 | `goal` `target` `indicator` `series_code` `series_description` | mixed | The SDG path and series identity. **KEY** |
-| `first_year` `last_year` `n_years_live` | int | When the series has data. |
-| `is_stable_core` `starts_late` `ends_early` `status` | lgl/chr | Lifespan flags, from `series_stability`. |
+| `first_year` `last_year` `n_years_live` | int | When the series has data. `n_years_live` counts years present, so gaps show here. |
+| `is_stable_core` `starts_late` `ends_early` `status` | lgl/chr | Lifespan flags. Filter on `ends_early` for every discontinued series; `status` files a series that both starts late and ends early under `entered_late` only. |
 | `n_observations` `n_observations_country` `n_observations_agency` | int | Published values for the series, split by producer. |
 | `n_declared_missing` `n_missing_structural` `n_missing_suppressed` | int | Empty cells for the series, by reason. |
 | `pct_country_produced` | dbl | Share country-produced: 2% to 100% across series. |
+| `max_countries` | int | The most countries reporting the series in any year. |
+| `log_first_seen` `log_added_date` `log_removed_date` `n_log_events` | Date/int | Supporting dates from the UN update log. |
+
+---
+
+## `grid_all_series` — input
+
+The full grid: one row per country-year, one column per series, 1 = at least one value
+published that year under any breakdown, 0 = none. A series under several goals has one
+column. Built by `03_wrangle_sdg.R` from `agg_series_depth`. Descriptive work uses this.
+
+**Grain:** country × year &nbsp;·&nbsp; **Key:** `iso3` + `year` &nbsp;·&nbsp; **Rows:** 1,773 &nbsp;·&nbsp; **Columns:** `iso3`, `year`, then 665 series
 
 ---
 
@@ -132,8 +158,9 @@ Which series repeat another. Some measurements are published twice (stunting as 
 percentage and as a count); kept, they would let a country earn two points for one act of
 reporting. A series is collapsed into its cluster only when it has the same reported/not
 pattern in every country-year **and** measures the same thing. Built by
-[`build_variant_map.R`](../../02_processing/build_variant_map.R); every fit halts if it is
-missing or stale.
+[`04_select_model_series_sdg.R`](../../02_processing/04_select_model_series_sdg.R);
+[`05_validate_data_sdg.R`](../../02_processing/05_validate_data_sdg.R) stops the run if a
+collapsed group does not move as one.
 
 **Grain:** one series (the 607 that pass the 2–98% filter) &nbsp;·&nbsp; **Key:** `series_code` &nbsp;·&nbsp; **Rows:** 607
 
@@ -145,6 +172,43 @@ missing or stale.
 | `cluster` | chr | The series that represents the cluster; the one kept. |
 | `verdict` | chr | `single` (no twin, 435) · `collapse` (a repeat, 142 series in 59 clusters) · `keep_separate` (same pattern, different measurement, 16) · `review` (not yet decided; kept separate, 14). |
 | `evidence` | chr | Why: pattern match, description similarity, indicators and units. |
+
+---
+
+## `grid_model_series` — input
+
+What the models fit: `grid_all_series` restricted to the 524 series that pass the 2–98%
+rule and the duplicate collapse. Built by `04_select_model_series_sdg.R`.
+
+**Grain:** country × year &nbsp;·&nbsp; **Key:** `iso3` + `year` &nbsp;·&nbsp; **Rows:** 1,773 &nbsp;·&nbsp; **Columns:** `iso3`, `year`, then 524 series
+
+---
+
+## `series_goal` — input
+
+Each model series and the one goal it counts toward. A series listed under several goals
+goes to whichever of its own goals has the fewest series, so no goal is starved by an
+arbitrary choice. Built by `04_select_model_series_sdg.R`.
+
+**Grain:** one model series &nbsp;·&nbsp; **Key:** `series_code` &nbsp;·&nbsp; **Rows:** 524
+
+| Column | Type | Description |
+|---|---|---|
+| `series_code` | chr | **KEY** |
+| `goals_listed` | chr | Every goal the series sits under, e.g. `1/11/13`. |
+| `goal_assigned` | int | The goal it counts toward. |
+
+---
+
+## `filter_log` — reference
+
+The series count after each rule that chooses the model series: 665 → 637 → 607 → 524.
+
+| Column | Type | Description |
+|---|---|---|
+| `step` | int | 0 = the starting set. |
+| `rule` | chr | The rule applied. |
+| `series` | int | Series left after it. |
 
 ---
 
@@ -163,25 +227,6 @@ from the full UN exports, so it counts a few series codes outside the 665.
 | `obs` | int | Published values. |
 | `pct_C` `pct_E` `pct_M` `pct_G` `pct_other` | dbl | Share of values with each nature code; `pct_C` includes `CA`. |
 | `mostly_country` | lgl | At least half country-produced (419 series). |
-
----
-
-## `series_stability` — reference
-
-Each series' lifespan, from the data and the UN's update log. The SDG framework grew during
-2015–2023, so some series did not exist in early years. The 409 series live in every year
-form the **stable core**, used to check that the index is not driven by framework growth.
-Built by [`build_series_stability.R`](../../02_processing/build_series_stability.R).
-
-**Grain:** one series &nbsp;·&nbsp; **Key:** `series_code` &nbsp;·&nbsp; **Rows:** 665
-
-| Column | Type | Description |
-|---|---|---|
-| `series_code` | chr | One row each. **KEY** |
-| `first_year` `last_year` `n_years_live` | int | Lifespan. `n_years_live` counts years present, so gaps show here. |
-| `total_obs` `max_countries` | int | Reach: total values and the most countries reporting in any year. |
-| `is_stable_core` `starts_late` `ends_early` `status` | lgl/chr | Stability classification. |
-| `log_first_seen` `log_added_date` `log_removed_date` `n_log_events` | Date/int | Supporting dates from the UN update log. |
 
 ---
 
@@ -209,8 +254,8 @@ geographies remain.
 
 Country facts from outside the UN database: the income groups printed with the scores, and
 the benchmarks the index is checked against. Built by
-[`build_country_covariates.R`](../../02_processing/build_country_covariates.R) from dated
-snapshots in `01_data/raw/snapshots/`.
+[`extract_covariates.R`](../../02_processing/extract_covariates.R) from dated
+downloads in `01_data/raw/covariates/`.
 
 **Grain:** country × year &nbsp;·&nbsp; **Key:** `iso3` + `year` &nbsp;·&nbsp; **Rows:** 1,773
 
@@ -223,3 +268,4 @@ snapshots in `01_data/raw/snapshots/`.
 | `spi_overall` | dbl | World Bank Statistical Performance Indicators, overall score (all five pillars). 1,425 rows. |
 | `spi_overall_mod` | dbl | SPI without pillar 3, which partly scores SDG data availability from the same UN database; pillars 1, 2, 4 and 5 at 25% each. 1,432 rows. |
 | `hrv` `hrv_sd` | dbl | HRV transparency index, version 2 (Hollyer, Ge, Rosendorff & Vreeland 2024), and its standard deviation. It ends in 2015, so only 149 rows have a value. |
+| `spi_p1_use` `spi_p2_services` `spi_p3_products` `spi_p4_sources` `spi_p5_infra` | dbl | The five SPI pillars: data use, services, products, sources, infrastructure. Pillar 3 partly scores SDG data availability from the same UN database as the index. |

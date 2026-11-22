@@ -1,16 +1,17 @@
 # ==============================================================================
-# validate_vsi_external.R
+# validate_vsi_external_measures.R
 #
 # Convergent validity for the overall index (vsi): does it agree with
 # independent measures of statistical capacity built by other people from
 # other data?
 #
 # WHAT IT USES
-#   SPI  -- World Bank Statistical Performance Indicators, in the repo at
-#           01_data/raw/snapshots/spi__2026-11-04.csv.
+#   SPI  -- World Bank Statistical Performance Indicators, overall and the five
+#           pillars, from 01_data/processed/country_covariates.csv.
 #   HRV  -- Hollyer/Rosendorff/Vreeland transparency index (HRV2), the `hrv`
-#           column of 01_data/processed/country_covariates.csv
-#           (02_processing/build_country_covariates.R). It overlaps 2015 only.
+#           column of the same file. It overlaps 2015 only.
+#   Both are put there by 02_processing/extract_covariates.R, the only script
+#   that opens the raw downloads.
 #
 # WHAT IT DELIBERATELY DOES NOT USE
 #   V-Dem. Autocratization is the TREATMENT in the Politics of NAs paper.
@@ -23,11 +24,11 @@
 #   (data sources: censuses, surveys, admin records) and 5 (data
 #   infrastructure) are the independent comparators.
 #
-# OUTPUT  03_measures/vsi/checks/output/vsi_external_validity.csv
-#         03_measures/vsi/checks/output/vsi_spi_disagreements.csv
+# OUTPUT  03_measures/vsi/validate_measure/output/vsi_external_validity.csv
+#         03_measures/vsi/validate_measure/output/vsi_spi_disagreements.csv
 #         docs/site_data/validity_spi.json   (read by the landing page)
 # ==============================================================================
-source(here::here("functions/packages.R"))
+source(here::here("packages.R"))
 library(here)
 suppressPackageStartupMessages(library(data.table))
 
@@ -39,24 +40,20 @@ msg("vsi: ", nrow(vsi), " country-years, ",
     paste(range(vsi$year), collapse = "-"))
 
 # ---- B. SPI, OVERALL AND BY PILLAR ------------------------------------------
-spi <- fread(here("01_data/raw/snapshots/spi__2026-11-04.csv"))
-spi[, year := as.integer(substr(as.character(date), 1, 4))]
-pill <- c(spi_overall = "SPI.INDEX",
-          spi_p1_use = "SPI.INDEX.PIL1", spi_p2_services = "SPI.INDEX.PIL2",
-          spi_p3_products = "SPI.INDEX.PIL3", spi_p4_sources = "SPI.INDEX.PIL4",
-          spi_p5_infra = "SPI.INDEX.PIL5")
-pill <- pill[pill %in% names(spi)]
-spi <- spi[, c("iso3c", "year", unname(pill)), with = FALSE]
-setnames(spi, c("iso3c", "year", names(pill)))
-setnames(spi, "iso3c", "iso3", skip_absent = TRUE)
-if (!"iso3" %in% names(spi)) setnames(spi, 1, "iso3")
+cov_path <- here("01_data/processed/country_covariates.csv")
+pill <- c(spi_overall = "spi_overall",
+          spi_p1_use = "spi_p1_use", spi_p2_services = "spi_p2_services",
+          spi_p3_products = "spi_p3_products", spi_p4_sources = "spi_p4_sources",
+          spi_p5_infra = "spi_p5_infra")
+spi <- fread(cov_path)[, c("iso3", "year", unname(pill)), with = FALSE]
+# keep only country-years SPI actually covers
+spi <- spi[rowSums(!is.na(spi[, unname(pill), with = FALSE])) > 0]
 
 d <- merge(vsi, spi, by = c("iso3", "year"))
 msg("merged with SPI: ", nrow(d), " country-years")
 
 # ---- C. HRV, IF PRESENT -----------------------------------------------------
-cov_path <- here("01_data/processed/country_covariates.csv")
-has_hrv <- file.exists(cov_path)
+has_hrv <- "hrv" %in% names(fread(cov_path, nrows = 0))
 if (has_hrv) {
   hrv <- fread(cov_path)[!is.na(hrv), .(iso3, year, hrv)]
   d <- merge(d, hrv, by = c("iso3", "year"), all.x = TRUE)
@@ -100,7 +97,7 @@ res <- rbind(res, data.table(benchmark = "spi_overall",
   pearson = round(median(wc$r, na.rm = TRUE), 3), spearman = NA_real_))
 
 print(res[scope == "all years"])
-fwrite(res, here("03_measures/vsi/checks/output/vsi_external_validity.csv"))
+fwrite(res, here("03_measures/vsi/validate_measure/output/vsi_external_validity.csv"))
 
 # ---- E. WHERE THEY DISAGREE -------------------------------------------------
 # The substantively interesting cases, and a good figure: countries SPI rates
@@ -118,7 +115,7 @@ disag[, (c("vsi","spi_overall","z_vsi","z_spi","gap")) :=
         lapply(.SD, round, 2), .SDcols = c("vsi","spi_overall","z_vsi","z_spi","gap")]
 cat("\n--- reports MORE than its statistical system predicts (top) / LESS (bottom) ---\n")
 print(disag)
-fwrite(disag, here("03_measures/vsi/checks/output/vsi_spi_disagreements.csv"))
+fwrite(disag, here("03_measures/vsi/validate_measure/output/vsi_spi_disagreements.csv"))
 # ---- F. FEED THE PUBLIC PAGE ------------------------------------------------
 # docs/index.html fetches this, the same pattern build_docs_data.R uses for
 # vsi_scores.json. The `overlaps_source` flag is the point of the figure:
@@ -162,4 +159,4 @@ jsonlite::write_json(list(
 ), here("docs/site_data/validity_spi.json"), auto_unbox = TRUE, digits = NA)
 cat("wrote docs/site_data/validity_spi.json\n")
 
-msg("done. tables in 03_measures/vsi/checks/output/, page data in docs/")
+msg("done. tables in 03_measures/vsi/validate_measure/output/, page data in docs/")

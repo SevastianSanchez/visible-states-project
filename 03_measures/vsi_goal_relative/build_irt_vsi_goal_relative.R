@@ -56,14 +56,21 @@
 #
 # RESUMING   safe to re-run. Picks up from the checkpoint and keeps going.
 #
-# INPUT   via functions/irt_prep.R
+# INPUT   01_data/processed/grid_all_series.rds, grid_model_series.rds and
+#         series_goal.csv (02_processing/03 and 04), via 03_measures/functions/model_data.R
 # OUTPUT  01_data/vsi_scores/vsi_goal_relative/irt_vsi_goal_relative_{scores.csv,scores.rds,
 #         item_params.csv,health.csv,run_log.csv,fit.rds}
 #         plus irt_vsi_goal_relative_ckpt.rds, the resume point.
 # ==============================================================================
 
 suppressMessages({library(mirt); library(data.table); library(here)})
-source(here("functions/irt_prep.R"))
+source(here::here("03_measures/functions/model_data.R"))
+list2env(model_inputs(
+  readRDS(here::here("01_data/processed/grid_all_series.rds")),
+  readRDS(here::here("01_data/processed/grid_model_series.rds")),
+  data.table::fread(here::here("01_data/processed/series_goal.csv")),
+  min_series_per_goal), environment())
+set.seed(20261105)   # the seed the published fits used, so they reproduce exactly
 
 CHUNK     <- 50L      # cycles per checkpoint
 MAX_TOTAL <- 3000L    # ceiling; stop rather than run forever
@@ -224,7 +231,7 @@ if (val_cor < 0.9999 || val_diff > 0.01)
        call. = FALSE)
 
 # ---- HEALTH, and the guard ---------------------------------------------------
-# Series counts come from irt_prep's own spec, NOT from
+# Series counts come from model_inputs()' own spec, NOT from
 # fit@Internals$bfactor$specific. mirt stores the general-only series (goal 7,
 # passed as NA) under specific index 1 for its own bookkeeping, so reading the
 # count from there credits them to goal 1 and reports 35 series instead of 32.
@@ -258,7 +265,7 @@ wt <- rbindlist(lapply(seq_len(G), function(g) {
 }))
 health <- merge(health, wt, by = "goal", all.x = TRUE)
 setorder(health, goal)
-HOLD_CONTENT <- c(6L, 15L)
+HOLD_CONTENT <- goals_held   # rules.R
 health[, release := fifelse(goal %in% HOLD_CONTENT, "hold_content", "release")]
 
 stopifnot(nrow(rel) == N * G, !any(is.na(rel$vsi_goal_relative)),

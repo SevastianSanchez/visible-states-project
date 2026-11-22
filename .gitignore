@@ -4,11 +4,16 @@
 **/._.DS_Store
 .Rproj.user
 
-# The bulk UN SDG goal exports only (310 MB). Too large to track; the README
-# documents re-downloading them. Everything else in 01_data/raw/ is small
-# and IS tracked, including sdg_update_info.xlsx, so a fresh clone can run
-# build_series_stability.R without re-downloading anything.
-01_data/raw/un_sdg_exports/
+# The 17 bulk UN SDG goal exports (310 MB). Too large to track; the README
+# documents re-downloading them. The UN's update log in the same folder
+# (sdg_update_info.xlsx) is small and IS tracked. Everything else in
+# 01_data/raw/ is tracked too.
+01_data/raw/un_sdg_exports/*
+!01_data/raw/un_sdg_exports/sdg_update_info.xlsx
+
+# Working files handed from one processing script to the next (01 -> 02 -> 03).
+# Large, and rebuilt by running those scripts, so never pushed.
+01_data/intermediate/
 
 # Local R session files
 .RData

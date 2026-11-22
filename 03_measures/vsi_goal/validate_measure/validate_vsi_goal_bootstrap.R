@@ -14,10 +14,10 @@
 # comparable: the same 1,773 people are scored every time, by different rulers.
 #
 # Settings per METHODS_LOG.md: squarem, prior norm(0,2) on slopes, TOL 1e-3.
-# OUTPUT  03_measures/vsi_goal/checks/output/vsi_goal_bootstrap.csv -- per country-year per
+# OUTPUT  03_measures/vsi_goal/validate_measure/output/vsi_goal_bootstrap.csv -- per country-year per
 #         goal: bootstrap SD, and the model SE beside it.
 #
-# RUN     B=500 CORES=8 Rscript 03_measures/vsi_goal/checks/validate_vsi_goal_bootstrap.R   (~98 min)
+# RUN     B=500 CORES=8 Rscript 03_measures/vsi_goal/validate_measure/validate_vsi_goal_bootstrap.R   (~98 min)
 #
 # PROVENANCE  Recovered 14 Nov 2026 from the session that ran it (9 Nov 2026, B = 500 on 8 cores, 98.1 min; results in METHODS_LOG.md).
 # The logic is exactly as run. Changed for the repo: file paths only, and the default B set from 400 to the 500 actually run.
@@ -32,15 +32,21 @@
 suppressMessages({library(mirt); library(data.table); library(here); library(parallel)})
 B      <- as.integer(Sys.getenv("B", "500"))
 CORES  <- as.integer(Sys.getenv("CORES", "8"))
-source(here("functions/irt_prep.R"))
+source(here::here("03_measures/functions/model_data.R"))
+list2env(model_inputs(
+  readRDS(here::here("01_data/processed/grid_all_series.rds")),
+  readRDS(here::here("01_data/processed/grid_model_series.rds")),
+  data.table::fread(here::here("01_data/processed/series_goal.csv")),
+  min_series_per_goal), environment())
+set.seed(20261105)   # the seed the published fits used, so they reproduce exactly
 set.seed(20261109)
 
 goals <- sort(unique(item_goal))
 cols  <- lapply(goals, function(g) {
   cs <- colnames(resp)[item_goal == g]; M <- resp[, cs, drop = FALSE]
-  p <- colMeans(M); cs[p > 0.02 & p < 0.98] })
+  cs[filter_prevalence(M, item_lo, item_hi)] })
 names(cols) <- goals
-goals <- goals[sapply(cols, length) >= 10]
+goals <- goals[sapply(cols, length) >= min_series_per_goal]
 msg("bootstrap: ", B, " replicates x ", length(goals), " goals on ", CORES, " cores")
 
 prior_pars <- function(M) { v <- mirt(M, 1, itemtype = "2PL", pars = "values")
@@ -82,7 +88,7 @@ res <- rbindlist(lapply(as.character(goals), function(g) {
              boot_sd = round(apply(Mx, 1, sd, na.rm = TRUE), 4),
              n_ok = rowSums(!is.na(Mx))) }))
 res <- merge(base, res, by = c("iso3", "year", "goal"))
-fwrite(res, here("03_measures/vsi_goal/checks/output/vsi_goal_bootstrap.csv"))
+fwrite(res, here("03_measures/vsi_goal/validate_measure/output/vsi_goal_bootstrap.csv"))
 
 cat("\n=== bootstrap SD vs the model's posterior SE, by goal ===\n")
 print(res[, .(boot_sd_median = round(median(boot_sd, na.rm=TRUE), 3),

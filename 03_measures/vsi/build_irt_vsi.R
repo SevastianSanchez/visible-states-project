@@ -32,12 +32,21 @@
 #           1,773 country-years. An unconverged fit is not publishable, so the
 #           script says so loudly rather than writing quietly.
 #
-# INPUT   via functions/irt_prep.R
+# INPUT   01_data/processed/grid_all_series.rds, grid_model_series.rds and
+#         series_goal.csv (02_processing/03 and 04), via 03_measures/functions/model_data.R
 # OUTPUT  01_data/vsi_scores/vsi/irt_vsi_*  plus the two shared provenance
 #         artifacts this script owns (response matrix, goal assignment)
 # ==============================================================================
 
-source(here::here("functions/irt_prep.R"))
+source(here::here("03_measures/functions/model_data.R"))
+list2env(model_inputs(
+  readRDS(here::here("01_data/processed/grid_all_series.rds")),
+  readRDS(here::here("01_data/processed/grid_model_series.rds")),
+  data.table::fread(here::here("01_data/processed/series_goal.csv")),
+  min_series_per_goal), environment())
+set.seed(20261105)   # the seed the published fits used, so they reproduce exactly
+
+max_cycles <- 30000   # EM cycle cap. This fit needed 13,561.
 
 # ---- FIT ---------------------------------------------------------------------
 

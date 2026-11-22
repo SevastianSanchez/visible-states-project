@@ -13,14 +13,14 @@
 #     clustered, because the rule requires exact identity).
 # Both produce the same numerical symptom: a discrimination running to infinity.
 #
-# OUTPUT  02_processing/checks/output/collinear_series.csv
+# OUTPUT  02_processing/diagnostics/output/collinear_series.csv
 # ==============================================================================
-source(here::here("functions/packages.R"))
+source(here::here("packages.R"))
 library(here); suppressPackageStartupMessages(library(data.table))
 
 THRESH <- 0.98   # report any pair agreeing on at least this share of country-years
 
-sl <- unique(fread(here("01_data/processed/series_list.csv"))[
+sl <- unique(fread(here("01_data/processed/series_stability_list.csv"))[
   , .(series_code, series_description, goal, indicator)])
 sl <- sl[, .(goal = paste(sort(unique(goal)), collapse = "/"),
              indicator = indicator[1],
@@ -28,20 +28,8 @@ sl <- sl[, .(goal = paste(sort(unique(goal)), collapse = "/"),
 vm <- fread(here("01_data/processed/series_variant_map.csv"))[
   , .(series_code, units, verdict, cluster)]
 
-x <- as.data.table(readRDS(here("01_data/processed/agg_series_depth.rds")))
-x <- x[, .(r = any(reported)), by = .(iso3, series_code, year)]
-g <- CJ(iso3 = sort(unique(x$iso3)), series_code = sort(unique(x$series_code)),
-        year = sort(unique(x$year)), unique = TRUE)
-g <- merge(g, x, by = c("iso3", "series_code", "year"), all.x = TRUE)
-g[, y := as.integer(!is.na(r) & r)]
-w <- dcast(g, iso3 + year ~ series_code, value.var = "y")
-M <- as.matrix(w[, -(1:2)])
-
-# restrict to the 524 the model actually fits
-p <- colMeans(M); M <- M[, p > 0.02 & p < 0.98, drop = FALSE]
-reps <- fread(here("01_data/processed/series_variant_map.csv"))[
-  series_code == cluster | verdict != "collapse"]$series_code
-M <- M[, colnames(M) %in% reps, drop = FALSE]
+# the 524 series the models fit (02_processing/04_select_model_series_sdg.R)
+M <- as.matrix(readRDS(here("01_data/processed/grid_model_series.rds"))[, -(1:2)])
 N <- nrow(M); J <- ncol(M)
 cat("screening", J, "series over", N, "country-years\n")
 
@@ -91,6 +79,6 @@ for (gg in unique(out$group)) {
   for (i in seq_len(nrow(s)))
     cat("   ", s$series_code[i], " [", s$units[i], "] ", s$series_description[i], "\n", sep = "")
 }
-fwrite(out, here("02_processing/checks/output/collinear_series.csv"))
-cat("\nwrote 02_processing/checks/output/collinear_series.csv |", uniqueN(out$group),
+fwrite(out, here("02_processing/diagnostics/output/collinear_series.csv"))
+cat("\nwrote 02_processing/diagnostics/output/collinear_series.csv |", uniqueN(out$group),
     "groups,", nrow(out), "series\n")

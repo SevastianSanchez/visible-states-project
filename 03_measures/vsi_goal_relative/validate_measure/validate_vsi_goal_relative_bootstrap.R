@@ -12,19 +12,25 @@
 # sleeping laptop costs one replicate instead of the whole run, and a re-run
 # picks up where it stopped.
 #
-# OUTPUT  03_measures/vsi_goal_relative/checks/output/vsi_goal_relative_bootstrap.csv (per goal). Per-
+# OUTPUT  03_measures/vsi_goal_relative/validate_measure/output/vsi_goal_relative_bootstrap.csv (per goal). Per-
 #         replicate checkpoints go to 01_data/vsi_scores/vsi_goal_relative/boot_ck/,
 #         which is not tracked.
 #
-# RUN     B=100 DIAG_N=4 C_DIAG=4 C_FULL=10 Rscript 03_measures/vsi_goal_relative/checks/validate_vsi_goal_relative_bootstrap.R  (~4.7 h)
+# RUN     B=100 DIAG_N=4 C_DIAG=4 C_FULL=10 Rscript 03_measures/vsi_goal_relative/validate_measure/validate_vsi_goal_relative_bootstrap.R  (~4.7 h)
 #
 # PROVENANCE  Recovered 14 Nov 2026 from the session that ran it (10 Nov 2026, attempt 3, B = 100 on 10 cores, 282.8 min; results in METHODS_LOG.md).
 # The logic is exactly as run. Changed for the repo: file paths only.
 # ==============================================================================
 suppressMessages({library(mirt); library(data.table); library(here); library(parallel)})
 msg <- function(...) cat(format(Sys.time(), "[%H:%M:%S] "), ..., "\n", sep = "")
-source(here("functions/irt_prep.R"))
-source(here("functions/bifactor_scorer.R"))
+source(here::here("03_measures/functions/model_data.R"))
+list2env(model_inputs(
+  readRDS(here::here("01_data/processed/grid_all_series.rds")),
+  readRDS(here::here("01_data/processed/grid_model_series.rds")),
+  data.table::fread(here::here("01_data/processed/series_goal.csv")),
+  min_series_per_goal), environment())
+set.seed(20261105)   # the seed the published fits used, so they reproduce exactly
+source(here("03_measures/functions/bifactor_scorer.R"))
 CK <- here("01_data/vsi_scores/vsi_goal_relative/boot_ck"); dir.create(CK, showWarnings = FALSE)
 
 B      <- as.integer(Sys.getenv("B", "100"))
@@ -111,5 +117,5 @@ tab <- out[, .(boot_sd = round(median(boot_sd), 4), se = round(median(se), 4),
 print(tab)
 msg("ratio of bootstrap SD to posterior SE: median ", round(100 * median(out$boot_sd / out$se)),
     "% | range ", round(100 * min(tab$ratio_pct / 100 * 100) / 100), "-", max(tab$ratio_pct), "%")
-fwrite(tab, here("03_measures/vsi_goal_relative/checks/output/vsi_goal_relative_bootstrap.csv"))
-msg("done. wrote 03_measures/vsi_goal_relative/checks/output/vsi_goal_relative_bootstrap.csv")
+fwrite(tab, here("03_measures/vsi_goal_relative/validate_measure/output/vsi_goal_relative_bootstrap.csv"))
+msg("done. wrote 03_measures/vsi_goal_relative/validate_measure/output/vsi_goal_relative_bootstrap.csv")

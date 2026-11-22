@@ -1,6 +1,8 @@
 # ==============================================================================
 # build_release_bundle.R
 #
+# MAINTAINER ONLY. Not needed to reproduce the scores.
+#
 # Builds the files uploaded to Zenodo for a release, in _release/v<VERSION>/
 # (gitignored: nothing here is committed, so the repo keeps one copy of
 # everything). Two parts, as in releases/README.md:

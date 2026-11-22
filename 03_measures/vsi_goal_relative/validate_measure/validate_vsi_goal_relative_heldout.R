@@ -8,17 +8,23 @@
 # FRESH permutation per series -- reusing one permutation across series leaves
 # structure that makes the null look non-random.
 #
-# OUTPUT  03_measures/vsi_goal_relative/checks/output/vsi_goal_relative_heldout_raw.csv (one row per
+# OUTPUT  03_measures/vsi_goal_relative/validate_measure/output/vsi_goal_relative_heldout_raw.csv (one row per
 #         held-out series per split) and vsi_goal_relative_heldout_validity.csv.
 #
-# RUN     SPLITS=20 CORES=4 Rscript 03_measures/vsi_goal_relative/checks/validate_vsi_goal_relative_heldout.R  (~2.5 h)
+# RUN     SPLITS=20 CORES=4 Rscript 03_measures/vsi_goal_relative/validate_measure/validate_vsi_goal_relative_heldout.R  (~2.5 h)
 #
 # PROVENANCE  Recovered 14 Nov 2026 from the session that ran it (9 Nov 2026, 20 splits on 4 cores, 156.9 min; results in METHODS_LOG.md).
 # The logic is exactly as run. Changed for the repo: file paths only.
 # ==============================================================================
 suppressMessages({library(mirt); library(data.table); library(here); library(parallel)})
-source(here("functions/irt_prep.R"))
-source(here("functions/bifactor_scorer.R"))
+source(here::here("03_measures/functions/model_data.R"))
+list2env(model_inputs(
+  readRDS(here::here("01_data/processed/grid_all_series.rds")),
+  readRDS(here::here("01_data/processed/grid_model_series.rds")),
+  data.table::fread(here::here("01_data/processed/series_goal.csv")),
+  min_series_per_goal), environment())
+set.seed(20261105)   # the seed the published fits used, so they reproduce exactly
+source(here("03_measures/functions/bifactor_scorer.R"))
 
 SPLITS <- as.integer(Sys.getenv("SPLITS", "20"))
 CORES  <- as.integer(Sys.getenv("CORES", "4"))
@@ -66,7 +72,7 @@ res <- rbindlist(Filter(Negate(is.null), mclapply(seq_len(SPLITS), one, mc.cores
 msg("done in ", round(as.numeric(difftime(Sys.time(), t0, units="mins")),1), " min | ",
     nrow(res), " series-splits from ", uniqueN(res$split), " splits")
 if (!nrow(res)) stop("no usable splits")
-fwrite(res, here("03_measures/vsi_goal_relative/checks/output/vsi_goal_relative_heldout_raw.csv"))
+fwrite(res, here("03_measures/vsi_goal_relative/validate_measure/output/vsi_goal_relative_heldout_raw.csv"))
 
 # median across series within a goal, then report
 tab <- res[, .(train = NA_integer_, test = uniqueN(series),
@@ -74,7 +80,7 @@ tab <- res[, .(train = NA_integer_, test = uniqueN(series),
                pct_right_way = round(100*mean(auc > 0.5))), by = goal]
 tab[, lift := round(real - null, 3)]
 setorder(tab, -real)
-fwrite(tab, here("03_measures/vsi_goal_relative/checks/output/vsi_goal_relative_heldout_validity.csv"))
+fwrite(tab, here("03_measures/vsi_goal_relative/validate_measure/output/vsi_goal_relative_heldout_validity.csv"))
 print(tab)
 cat("\nAUC 0.5 = chance. 'null' is the same test with country labels shuffled.\n")
 cat("median real:", median(tab$real), "| median null:", median(tab$null), "\n")

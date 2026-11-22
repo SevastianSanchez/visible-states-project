@@ -1,6 +1,8 @@
 # ==============================================================================
 # build_docs_data.R
 #
+# MAINTAINER ONLY. Not needed to reproduce the scores.
+#
 # Emits the JSON and CSV that the GitHub Pages landing page (docs/index.html)
 # reads. Run after the overall fit; the page is static otherwise.
 #
@@ -34,7 +36,7 @@ dir.create(here("docs/site_data"), showWarnings = FALSE)
 
 s <- as.data.table(readRDS(here("01_data/vsi_scores/vsi/irt_vsi_scores.rds")))
 # Country names and income groups: built from their original sources by
-# 02_processing/build_country_covariates.R. Income group is that year's World
+# 02_processing/extract_covariates.R. Income group is that year's World
 # Bank classification, so each country-year row carries its own.
 cv   <- fread(here("01_data/processed/country_covariates.csv"))
 meta <- cv[, .(iso3, year, country_name, income_level)]
@@ -118,11 +120,13 @@ if (file.exists(gp) && file.exists(hp)) {
 
   h[, goal_name := SDG_NAME[as.character(goal)]]
 
-  # How many series each goal actually has, taken from the shared prep, so a
-  # goal that is not fitted can still state its size. MIN_SERIES_DOC mirrors
-  # MIN_SERIES in build_irt_vsi_goal.R.
-  MIN_SERIES_DOC <- 10L
-  if (!exists("item_goal")) source(here("functions/irt_prep.R"))
+  # How many series each goal actually has, from the goal assignment the models
+  # use (02_processing/04_select_model_series_sdg.R), so a goal that is not
+  # fitted can still state its size. The minimum comes from rules.R, the same
+  # number build_irt_vsi_goal.R uses.
+  source(here("rules.R"))
+  MIN_SERIES_DOC <- min_series_per_goal
+  item_goal <- fread(here("01_data/processed/series_goal.csv"))$goal_assigned
   N_SERIES_BY_GOAL <- table(item_goal)
 
   g <- merge(g, meta, by = c("iso3", "year"), all.x = TRUE)

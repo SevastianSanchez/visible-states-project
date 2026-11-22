@@ -13,7 +13,7 @@
 score_bifactor <- function(fit, X = NULL, K = 61L, LIM = 6) {
   cf   <- coef(fit, simplify = TRUE)$items
   spec <- fit@Internals$bfactor$specific
-  # as.matrix on BOTH branches: irt_prep hands out `resp` as a data.frame, and a
+  # as.matrix on BOTH branches: model_inputs() hands out `resp` as a data.frame, and a
   # data.frame in %*% gives "requires numeric/complex matrix/vector arguments"
   X <- if (is.null(X)) as.matrix(fit@Data$data) else as.matrix(X)
   X <- X[, rownames(cf), drop = FALSE]

@@ -63,13 +63,20 @@
 #
 # RUNTIME  under a minute for all 16 goals. No checkpointing needed.
 #
-# INPUT   via functions/irt_prep.R
+# INPUT   01_data/processed/grid_all_series.rds, grid_model_series.rds and
+#         series_goal.csv (02_processing/03 and 04), via 03_measures/functions/model_data.R
 # OUTPUT  01_data/vsi_scores/vsi_goal/irt_vsi_goal_{scores.csv,scores.rds,
 #         item_params.csv,health.csv,run_log.csv,fits.rds}
 #         This script writes no file that build_irt_vsi.R writes.
 # ==============================================================================
 
-source(here::here("functions/irt_prep.R"))
+source(here::here("03_measures/functions/model_data.R"))
+list2env(model_inputs(
+  readRDS(here::here("01_data/processed/grid_all_series.rds")),
+  readRDS(here::here("01_data/processed/grid_model_series.rds")),
+  data.table::fread(here::here("01_data/processed/series_goal.csv")),
+  min_series_per_goal), environment())
+set.seed(20261105)   # the seed the published fits used, so they reproduce exactly
 
 suppressMessages({library(mirt); library(data.table); library(here)})
 
@@ -79,29 +86,31 @@ suppressMessages({library(mirt); library(data.table); library(here)})
 prov_path <- here::here("01_data/processed/series_provenance_nature.csv")
 prov <- if (file.exists(prov_path)) data.table::fread(prov_path) else NULL
 
-MIN_SERIES   <- 10L      # below this a factor is not identified
+MIN_SERIES   <- min_series_per_goal   # rules.R: below this a factor is not identified
 TOL          <- 1e-3
 PRIOR_SD     <- 2
 MAX_CYCLES   <- 5000L
 REL_REF      <- 0.70     # reported as a reference point, never applied as a cut
-HOLD_CONTENT <- c(6L, 15L)   # withheld on content grounds; see CLAUDE.md
+HOLD_CONTENT <- goals_held   # rules.R: withheld on content grounds
 
 # ---- ONE GOAL ----------------------------------------------------------------
 fit_goal <- function(g) {
   cs <- colnames(resp)[item_goal == g]
   M  <- resp[, cs, drop = FALSE]
 
-  # Safety check, not a filter. The 2-98% filter already ran in irt_prep.R on
+  # Safety check, not a filter. The 2-98% filter already ran in
+  # 02_processing/04_select_model_series_sdg.R on
   # the same 1,773 country-years, so no series here should fail it. If one
-  # does, irt_prep.R has changed and the goal fits must not run on its output.
-  # Cutoffs come from irt_prep.R (item_lo, item_hi), not retyped here.
+  # does, that script has changed and the goal fits must not run on its output.
+  # Cutoffs come from rules.R (item_lo, item_hi), not retyped here.
   p   <- colMeans(M)
   bad <- !(p > item_lo & p < item_hi)
   if (any(bad))
     stop("goal ", g, ": ", sum(bad), " series reported in ", item_lo * 100,
          "% or fewer, or ", item_hi * 100, "% or more, of country-years ",
          "reached the goal fit (", paste(cs[bad], collapse = ", "), "). The ",
-         "2-98% filter in irt_prep.R should have removed them; check it ",
+         "2-98% filter in 04_select_model_series_sdg.R should have removed ",
+            "them; check it ",
          "before fitting.", call. = FALSE)
 
   if (ncol(M) < MIN_SERIES) {
