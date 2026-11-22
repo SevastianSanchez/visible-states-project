@@ -91,14 +91,18 @@ fit_goal <- function(g) {
   cs <- colnames(resp)[item_goal == g]
   M  <- resp[, cs, drop = FALSE]
 
-  # Guard, not a filter: the 2-98% screen already ran globally in irt_prep.R.
-  # If it ever bites here, say so rather than dropping series silently.
-  p  <- colMeans(M)
-  drop <- !(p > 0.02 & p < 0.98)
-  if (any(drop)) {
-    msg("  goal ", g, ": ", sum(drop), " series near-constant within goal, dropped")
-    M <- M[, !drop, drop = FALSE]
-  }
+  # Safety check, not a filter. The 2-98% filter already ran in irt_prep.R on
+  # the same 1,773 country-years, so no series here should fail it. If one
+  # does, irt_prep.R has changed and the goal fits must not run on its output.
+  # Cutoffs come from irt_prep.R (item_lo, item_hi), not retyped here.
+  p   <- colMeans(M)
+  bad <- !(p > item_lo & p < item_hi)
+  if (any(bad))
+    stop("goal ", g, ": ", sum(bad), " series reported in ", item_lo * 100,
+         "% or fewer, or ", item_hi * 100, "% or more, of country-years ",
+         "reached the goal fit (", paste(cs[bad], collapse = ", "), "). The ",
+         "2-98% filter in irt_prep.R should have removed them; check it ",
+         "before fitting.", call. = FALSE)
 
   if (ncol(M) < MIN_SERIES) {
     msg(sprintf("  goal %-2d  series %3d  -- SKIPPED, under %d, factor not identified",

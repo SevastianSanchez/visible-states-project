@@ -385,6 +385,25 @@ if (nrow(file_manifest) != 17) {
 # =============================================================================
 
 # ---- C1. Single-file reader --------------------------------------------------
+# Stops the run if any check flags a row, naming each failed check, how many
+# rows it caught, and up to five example rows. `checks` is a named list of
+# logical vectors (TRUE = malformed), one per reason.
+stop_if_malformed <- function(rows, file_path, checks) {
+  failed <- Filter(any, checks)
+  if (length(failed) == 0) return(invisible(NULL))
+  for (reason in names(failed)) {
+    message("\n", basename(file_path), ": ", sum(failed[[reason]]),
+            " row(s) where ", reason, ". Examples:")
+    print(rows[failed[[reason]], c("SeriesCode", "GeoAreaCode", "GeoAreaName",
+                                   "TimePeriod", "Value")], n = 5)
+  }
+  stop(basename(file_path), " has malformed rows:\n",
+       paste0("  - ", sapply(failed, sum), " row(s) where ", names(failed),
+              collapse = "\n"),
+       "\nExamples are printed above. Inspect the export before going further.",
+       call. = FALSE)
+}
+
 read_one_goal_file <- function(file_path) {
   message("Reading: ", basename(file_path))
 
@@ -411,24 +430,41 @@ read_one_goal_file <- function(file_path) {
     goal_data[[column_name]] <- NA
   }
 
+  goal_data <- goal_data %>% select(all_of(keep_columns))
+
+  # Malformed rows stop the run instead of being dropped silently. They are
+  # broken export rows, not reporting outcomes. A "NaN" Value is NOT malformed:
+  # it is the UN declaring the slot empty, and it is kept as part of the
+  # outcome (converted to NA below).
+  #
+  # The year is checked on every row, before the window filter: a year that is
+  # not a whole number cannot be placed inside or outside 2015-2023, and
+  # as.integer() would turn it into NA and let the filter drop it unseen.
+  stop_if_malformed(goal_data, file_path, list(
+    "TimePeriod is blank or not a four-digit whole-number year (e.g. '2017n', '2017.5')" =
+      !str_detect(coalesce(goal_data$TimePeriod, ""), "^[0-9]{4}$")
+  ))
+
   goal_data <- goal_data %>%
-    select(all_of(keep_columns)) %>%
     mutate(
-      TimePeriod = suppressWarnings(as.integer(TimePeriod)),
+      TimePeriod = as.integer(TimePeriod),
       Goal       = suppressWarnings(as.integer(Goal))
     ) %>%
-    # Filter on the RAW Value string, before the NaN conversion below. A truly
-    # blank cell is dropped; a "NaN" cell (the UN saying it opened this slot and
-    # found nothing) is KEPT — that empty cell is part of the outcome.
     filter(
       TimePeriod >= start_year,
       TimePeriod <= end_year,
-      !is.na(Value),
-      Value != "",
-      !is.na(GeoAreaCode),
-      str_detect(GeoAreaCode, "^[0-9]+$"),
       !GeoAreaName %in% aggregate_geographies
-    ) %>%
+    )
+
+  # Value and area code are checked on the rows that are kept.
+  stop_if_malformed(goal_data, file_path, list(
+    "Value is blank: neither a published value nor the UN's \"NaN\" declared-missing marker" =
+      coalesce(goal_data$Value, "") == "",
+    "GeoAreaCode is blank or not a numeric M49 code" =
+      !str_detect(coalesce(goal_data$GeoAreaCode, ""), "^[0-9]+$")
+  ))
+
+  goal_data <- goal_data %>%
     mutate(
       # WHY an empty cell is empty, from the UN's Nature and Observation Status
       # fields. Set only where the value is "NaN" (NA on cells that have a value),
@@ -734,13 +770,16 @@ raw_data <- raw_data %>%
 
 .geo_iso <- raw_data %>% distinct(geo_area_code, geo_area_name, iso3)
 
-# Any geography left without an ISO3 cannot be merged to other datasets.
+# Any geography left without an ISO3 cannot be merged to other datasets, and
+# downstream it would become a country with a missing key (irt_prep.R groups
+# on iso3). So this stops the run rather than warning.
 .iso_missing <- .geo_iso %>% filter(is.na(iso3))
 if (nrow(.iso_missing) > 0) {
-  warning("No ISO3 for ", nrow(.iso_missing), " geography(ies): ",
-          paste0(.iso_missing$geo_area_code, " (", .iso_missing$geo_area_name, ")",
-                 collapse = ", "),
-          "\nAdd them to iso3_overrides in Section A5.")
+  stop("No ISO3 for ", nrow(.iso_missing), " geography(ies): ",
+       paste0(.iso_missing$geo_area_code, " (", .iso_missing$geo_area_name, ")",
+              collapse = ", "),
+       "\nAdd them to iso3_overrides in Section A5, or exclude them in A3.",
+       call. = FALSE)
 }
 
 # Two geographies sharing an ISO3 would fan out rows on the join.
