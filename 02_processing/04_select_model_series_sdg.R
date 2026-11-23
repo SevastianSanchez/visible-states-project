@@ -38,6 +38,7 @@
 #         01_data/processed/sdg_full_data.csv.gz            (descriptions and units)
 # OUTPUT  01_data/processed/series_variant_map.csv     the duplicate groups and the evidence
 #         01_data/processed/grid_model_series.rds    1,773 x 524, what the models fit
+#         01_data/processed/grid_model_series.csv    the same grid as a CSV, for use without R
 #         01_data/processed/series_goal.csv            each model series, its goals, its one goal
 #         01_data/processed/filter_log.csv             series count after each rule
 # ==============================================================================
@@ -218,6 +219,7 @@ fwrite(assign_list, file.path(out_dir, "series_goal.csv"))
 # ---- WRITE -------------------------------------------------------------------
 grid_model_series <- grid_all[, c("iso3", "year", colnames(resp)), with = FALSE]
 saveRDS(grid_model_series, file.path(out_dir, "grid_model_series.rds"))
+fwrite(grid_model_series, file.path(out_dir, "grid_model_series.csv"))   # same grid, readable without R
 
 filter_log <- data.table(
   step   = 0:3,

@@ -42,7 +42,7 @@ country-years → 524 after counting repeated series once
 | `series_stability_list` | input | goal-target-indicator-series | series_code (+ path) | 726 | `.csv` |
 | `grid_all_series` | input | country × year | iso3 + year | 1,773 (× 665 series) | `.rds` |
 | `series_variant_map` | input | one series | series_code | 607 | `.csv` |
-| `grid_model_series` | input | country × year | iso3 + year | 1,773 (× 524 series) | `.rds` |
+| `grid_model_series` | input | country × year | iso3 + year | 1,773 (× 524 series) | `.rds`, `.csv` |
 | `series_goal` | input | one model series | series_code | 524 | `.csv` |
 | `filter_log` | reference | one rule | step | 4 | `.csv` |
 | `series_provenance_nature` | reference | one series | SeriesCode | 668 | `.csv` |
