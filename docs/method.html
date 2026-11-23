@@ -278,11 +278,11 @@ own weaknesses attached.</p>
 <section class="step">
   <div class="n">STEP<b>02</b></div>
   <div class="sbody">
-    <h2>Complete the grid, so the zeros exist</h2>
+    <h2>Completing the grid, so the zeros exist</h2>
     <p>The UN export holds a row only where a country reported something. A missing report is
-    an <em>absent row</em>, not a zero. Load the export and count, and you count only
-    successes. So the first operation builds every cell that could exist &mdash; 197 countries
-    &times; 9 years &times; every series &mdash; and marks what the export does not reach as 0.</p>
+    an <em>absent row</em>, not a zero, so counting the export's rows would count only
+    successes. We therefore first build every cell that could exist &mdash; 197 countries
+    &times; 9 years &times; every series &mdash; and mark what the export does not reach as 0.</p>
     <dl class="terms">
       <dt>Completed grid</dt>
       <dd>The full country &times; year &times; series rectangle with zeros filled in.
@@ -302,7 +302,7 @@ own weaknesses attached.</p>
       </tbody>
     </table></div>
     <div class="flagbox"><b>The failure this prevents</b>
-    <p>Skip it and &ldquo;reporting&rdquo; silently becomes &ldquo;reporting, among countries
+    <p>Without it, &ldquo;reporting&rdquo; would silently become &ldquo;reporting, among countries
     that reported&rdquo; &mdash; the sample defined by the outcome. Everything downstream would
     then be wrong in the same invisible direction.</p></div>
   </div>
@@ -311,12 +311,12 @@ own weaknesses attached.</p>
 <section class="step">
   <div class="n">STEP<b>03</b></div>
   <div class="sbody">
-    <h2>Choose the series: 665 &rarr; 607 &rarr; 524</h2>
+    <h2>Choosing the series: 665 &rarr; 607 &rarr; 524</h2>
     <dl class="terms">
       <dt>The 2&ndash;98% filter <code>665 &rarr; 607</code></dt>
       <dd>Series reported in fewer than 2% or more than 98% of country&ndash;years are removed.
       If almost every country reports a series, learning that one particular country reported it
-      tells you nothing about that country &mdash; everyone did. The same is true in reverse when
+      says nothing about that country &mdash; everyone did. The same is true in reverse when
       almost nobody reports it. Either way the series cannot tell countries apart, so it is no
       use for placing them.</dd>
       <dt>Counting repeats once <code>607 &rarr; 524</code></dt>
@@ -357,10 +357,10 @@ own weaknesses attached.</p>
   <div class="sbody">
     <h2>The estimator: a two&ndash;parameter logistic item response model</h2>
     <p>This is what makes the measure more than a tally. The design comes from testing: a
-    student's ability is unobserved, but you see which questions they answered, and hard
-    questions are more informative than easy ones. Swap student for country&ndash;year and
-    question for series. Hollyer, Rosendorff and Vreeland introduced this design for World
-    Development Indicators; it is applied here to SDG data.</p>
+    student's ability is unobserved, but which questions they answered is observed, and hard
+    questions are more informative than easy ones. Here the student is a country&ndash;year and
+    the question is a series. Hollyer, Rosendorff and Vreeland introduced this design for the World
+    Development Indicators; we apply it to SDG data.</p>
     <div class="formula"><math display="block">
       <mrow>
         <mi>P</mi><mo form="prefix" stretchy="false">(</mo><mi>y</mi><mo>=</mo><mn>1</mn>
@@ -434,19 +434,19 @@ own weaknesses attached.</p>
 <section class="step">
   <div class="n">STEP<b>05</b></div>
   <div class="sbody">
-    <h2>Fit the series parameters by EM</h2>
+    <h2>Fitting the series parameters by EM</h2>
     <p>Every <i class="sym">a</i> and <i class="sym">d</i> must be estimated before any country can be
-    scored, and <i class="sym">&theta;</i> is unobserved &mdash; so you cannot estimate the series from the
-    countries or the countries from the series. The standard answer is to alternate.</p>
+    scored, and <i class="sym">&theta;</i> is unobserved &mdash; so neither the series nor the
+    countries can be estimated from the other directly. The standard solution alternates between them.</p>
     <dl class="terms">
       <dt>Marginal maximum likelihood, via the EM algorithm</dt>
-      <dd>Guess the series parameters; work out the implied distribution of <i class="sym">&theta;</i> for every
-      country&ndash;year (<em>expectation</em>); re&ndash;estimate the series parameters as if
-      that distribution were data (<em>maximisation</em>); repeat. Each pass is a
+      <dd>The algorithm starts from a guess at the series parameters, works out the implied distribution of <i class="sym">&theta;</i> for every
+      country&ndash;year (<em>expectation</em>), re&ndash;estimates the series parameters as if
+      that distribution were data (<em>maximisation</em>), and repeats. Each pass is a
       <strong>cycle</strong>. &ldquo;Marginal&rdquo; means <i class="sym">&theta;</i> is integrated out rather
       than estimated alongside, so the parameter count does not grow with countries.</dd>
       <dt>Convergence tolerance</dt>
-      <dd>Stop when no parameter moves by more than this in a cycle. Set to <strong>1e&minus;3</strong>.</dd>
+      <dd>Fitting stops once no parameter moves by more than this in a cycle. We set it to <strong>1e&minus;3</strong>.</dd>
     </dl>
     <p>Three settings depart from the defaults, and each was forced by a failed run. All are
     recorded, with the run that established them, in
@@ -478,7 +478,7 @@ own weaknesses attached.</p>
 <section class="step">
   <div class="n">STEP<b>06</b></div>
   <div class="sbody">
-    <h2>Score each country&ndash;year, with an error bar</h2>
+    <h2>Scoring each country&ndash;year, with an error bar</h2>
     <p>With the series parameters fixed, a country&ndash;year's 524 bits imply a probability
     distribution over its <i class="sym">&theta;</i>. The score is the mean of that distribution.</p>
     <div class="formula"><math display="block">
@@ -518,9 +518,9 @@ own weaknesses attached.</p>
     is deferred here, since nine years is a short series for a random walk to earn its place.</p>
     <p>It also means 2023 is scored on whatever the database held when this snapshot was taken.
     The UN fills recent years in gradually, so 2023 is incomplete, and its fall in the averages
-    is an archiving lag rather than a finding. Drop 2023 or absorb it with year effects.</p></div>
-    <p><strong>Orientation.</strong> The model identifies the factor only up to sign: flip every
-    <i class="sym">a</i> and every <i class="sym">&theta;</i> and the likelihood is identical. So after fitting, the sign
+    is an archiving lag rather than a finding. Analyses using the index should drop 2023 or absorb it with year effects.</p></div>
+    <p><strong>Orientation.</strong> The model identifies the factor only up to sign: flipping every
+    <i class="sym">a</i> and every <i class="sym">&theta;</i> leaves the likelihood unchanged. So after fitting, the sign
     is set by correlating <i class="sym">&theta;</i> with the plain count of series reported, and flipped if needed.
     More reporting is always a higher score.</p>
   </div>
@@ -592,8 +592,8 @@ own weaknesses attached.</p>
       0.772&ndash;0.953. 0.70 (Nunnally &amp; Bernstein 1994) is quoted as a reference point, never applied as a
       cut.</span></dd>
       <dt>The bootstrap</dt>
-      <dd>Resample the 1,773 country&ndash;years with replacement, refit the whole model,
-      re&ndash;score the original rows, repeat. The spread across replicates is how much the
+      <dd>We resample the 1,773 country&ndash;years with replacement, refit the whole model,
+      re&ndash;score the original rows, and repeat. The spread across replicates is how much the
       scores would move had a different sample been drawn &mdash; uncertainty in the
       <em>series parameters</em>, which the posterior standard error does not include.</dd>
     </dl>
@@ -614,7 +614,7 @@ own weaknesses attached.</p>
     <h3>Held&ndash;out series</h3>
     <dl class="terms">
       <dt>Held&ndash;out series validity</dt>
-      <dd>Fit on 70% of a goal's series, then ask how well the resulting score predicts
+      <dd>We fit each goal on 70% of its series and measure how well the resulting score predicts
       reporting on the <strong>30% it never saw</strong>. Scored by the <strong>area under the
       receiver operating characteristic curve (AUC)</strong>: the probability that a randomly
       chosen reported case outranks a randomly chosen unreported one.
@@ -629,8 +629,8 @@ own weaknesses attached.</p>
         <msub><mover accent="true"><mi>&#x3B8;</mi><mo>&#x5E;</mo></mover><mi>j</mi></msub>
         <mo stretchy="false">]</mo>
       </mrow></math>
-      <span>Pair every reported case with every unreported one and count how often the reported
-      one scored higher; <i class="sym">n</i><sub>1</sub> and <i class="sym">n</i><sub>0</sub>
+      <span>Every reported case is paired with every unreported one, and the AUC is the share of
+      pairs in which the reported one scored higher; <i class="sym">n</i><sub>1</sub> and <i class="sym">n</i><sub>0</sub>
       are how many of each there are. 0.5 is a coin flip, 1.0 is perfect. Computed per
       held&ndash;out series, then the
       median, against a <strong>permutation null</strong> drawn fresh for each series by
@@ -683,7 +683,7 @@ own weaknesses attached.</p>
 <section class="step">
   <div class="n">STEP<b>10</b></div>
   <div class="sbody">
-    <h2>Disclose, do not gate</h2>
+    <h2>Disclosing, not gating</h2>
     <p>Every goal that fits is published. Nothing is dropped for imprecision. Each goal instead
     carries four numbers a reader can weigh it by, so the judgement stays with the reader. This
     is the convention V&ndash;Dem, the World Bank's governance indicators and the HRV index all
@@ -714,14 +714,14 @@ own weaknesses attached.</p>
 <section class="step">
   <div class="n">STEP<b>11</b></div>
   <div class="sbody">
-    <h2>Pin the version, then nothing moves</h2>
+    <h2>Pinning the version, so nothing moves</h2>
     <p>The run order is fixed and documented in
     <a href="https://github.com/SevastianSanchez/visible-states-project#repository-layout">the repository README</a>.
-    Every fit reads the same prepared data, and preparation stops if the list of repeated series
-    is missing or out of date, so the overall index and the goal scores cannot drift apart.</p>
-    <p>A release copies the scores, the per&ndash;series parameters, the diagnostics, the run log
-    and the code into a versioned folder and deposits it at Zenodo, where each version keeps its
-    own DOI and the concept DOI always resolves to the latest.</p>
+    Every fit reads the same prepared data, and a check before any fit stops the run if those
+    data are not what they should be, so the overall index and the goal scores cannot drift apart.</p>
+    <p>Each release deposits the scores, the diagnostics and a data dictionary at Zenodo, with a
+    zip of the full repository at that version's tag. Each version keeps its own DOI, and the
+    concept DOI always resolves to the latest.</p>
   </div>
 </section>
 
@@ -759,7 +759,7 @@ own weaknesses attached.</p>
     <dt>EAP</dt><dd>Expected a posteriori: the posterior mean of <i class="sym">&theta;</i>. The scoring rule; its posterior SD is the standard error.</dd>
     <dt>Bifactor</dt><dd>A model where each series loads on exactly two factors: one general, one for its own goal.</dd>
     <dt>Reliability</dt><dd>Signal share of score variance: var(score) / (var(score) + mean SE&sup2;).</dd>
-    <dt>Bootstrap</dt><dd>Resample country&ndash;years, refit, re&ndash;score, repeat. Measures uncertainty in the series parameters.</dd>
+    <dt>Bootstrap</dt><dd>Resampling country&ndash;years, refitting and re&ndash;scoring, many times over. Measures uncertainty in the series parameters.</dd>
     <dt>AUC</dt><dd>Area under the receiver operating characteristic curve: the chance that a reported case outranks an unreported one. 0.5 is a coin flip.</dd>
     <dt>Permutation null</dt><dd>The AUC from shuffled scores &mdash; the floor any real result must clear.</dd>
   </dl>
