@@ -160,7 +160,7 @@ are the estimator, steps 8&ndash;9 try to break it, and steps 10&ndash;11 publis
 own weaknesses attached.</p>
 
 <figure class="pipe">
-  <svg viewBox="0 0 720 520" role="img" aria-label="The pipeline: 17 UN spreadsheets become 1,179,045 cells, then 665 series, 607 after the filter, 524 after merging repeats; the 524 then feed three different model shapes producing vsi, vsi_goal and vsi_goal_relative.">
+  <svg viewBox="0 0 720 572" role="img" aria-label="The pipeline: 17 UN spreadsheets; 260 geographies become 197 countries over 9 years; the completed grid has 1,179,045 cells; 665 series become 637, then 607 after the 2&ndash;98% filter, then 524 after merging repeats; the 524 then feed three different model shapes producing vsi, vsi_goal and vsi_goal_relative.">
     <defs>
       <marker id="ar" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto">
         <path d="M0 0 L8 4 L0 8 z" fill="var(--faint)"/>
@@ -175,68 +175,73 @@ own weaknesses attached.</p>
     <line class="pa" x1="360" y1="60" x2="360" y2="76" marker-end="url(#ar)"/>
 
     <rect class="pbox" x="196" y="78" width="328" height="34" rx="4"/>
-    <text class="pt b" x="360" y="94">1,179,045 cells</text>
-    <text class="ps" x="360" y="106">every country &times; year &times; series that could exist &mdash; 38.2% filled</text>
+    <text class="pt b" x="360" y="94">260 geographies &rarr; 197 countries &times; 9 years</text>
+    <text class="ps" x="360" y="106">non&ndash;sovereign places out, UK parts merged; 2015&ndash;2023</text>
     <line class="pa" x1="360" y1="112" x2="360" y2="128" marker-end="url(#ar)"/>
 
     <rect class="pbox" x="196" y="130" width="328" height="34" rx="4"/>
-    <text class="pt b" x="360" y="146">665 &rarr; 607 &rarr; 524 series</text>
-    <text class="ps" x="360" y="158">2&ndash;98% filter, then repeats merged</text>
-    <line class="pa" x1="360" y1="164" x2="360" y2="186"/>
+    <text class="pt b" x="360" y="146">1,179,045 cells</text>
+    <text class="ps" x="360" y="158">1,773 country&ndash;years &times; 665 series, zeros filled in &mdash; 38.2% reported</text>
+    <line class="pa" x1="360" y1="164" x2="360" y2="180" marker-end="url(#ar)"/>
 
-    <path class="pa" d="M360 186 H108 V206" marker-end="url(#ar)"/>
-    <path class="pa" d="M360 186 V206" marker-end="url(#ar)"/>
-    <path class="pa" d="M360 186 H612 V206" marker-end="url(#ar)"/>
+    <rect class="pbox" x="196" y="182" width="328" height="34" rx="4"/>
+    <text class="pt b" x="360" y="198">665 &rarr; 637 &rarr; 607 &rarr; 524 series</text>
+    <text class="ps" x="360" y="210">under 2% out, over 98% out, then repeats merged</text>
+    <line class="pa" x1="360" y1="216" x2="360" y2="238"/>
 
-    <text class="pl" x="360" y="226" text-anchor="middle">SAME ESTIMATOR, THREE MODEL SHAPES</text>
+    <path class="pa" d="M360 238 H108 V258" marker-end="url(#ar)"/>
+    <path class="pa" d="M360 238 V258" marker-end="url(#ar)"/>
+    <path class="pa" d="M360 238 H612 V258" marker-end="url(#ar)"/>
 
-    <rect class="pbox hi" x="12" y="238" width="192" height="104" rx="4"/>
-    <text class="pt b" x="108" y="256">one factor</text>
-    <text class="ps" x="108" y="272">1 fit on all 524 series</text>
-    <text class="ps" x="108" y="286">the overall index</text>
-    <text class="ps" x="108" y="306">every series loads on</text>
-    <text class="ps" x="108" y="318">the single factor</text>
-    <line class="pa" x1="108" y1="342" x2="108" y2="366" marker-end="url(#ar)"/>
+    <text class="pl" x="360" y="278" text-anchor="middle">SAME ESTIMATOR, THREE MODEL SHAPES</text>
 
-    <rect class="pbox hi" x="264" y="238" width="192" height="104" rx="4"/>
-    <text class="pt b" x="360" y="256">sixteen separate fits</text>
-    <text class="ps" x="360" y="272">one per goal, 17&ndash;75 series</text>
-    <text class="ps" x="360" y="286">goal 7 too thin to fit</text>
-    <text class="ps" x="360" y="306">a goal's score owes</text>
-    <text class="ps" x="360" y="318">nothing to the other 15</text>
-    <line class="pa" x1="360" y1="342" x2="360" y2="366" marker-end="url(#ar)"/>
+    <rect class="pbox hi" x="12" y="290" width="192" height="104" rx="4"/>
+    <text class="pt b" x="108" y="308">one factor</text>
+    <text class="ps" x="108" y="324">1 fit on all 524 series</text>
+    <text class="ps" x="108" y="338">the overall index</text>
+    <text class="ps" x="108" y="358">every series loads on</text>
+    <text class="ps" x="108" y="370">the single factor</text>
+    <line class="pa" x1="108" y1="394" x2="108" y2="418" marker-end="url(#ar)"/>
 
-    <rect class="pbox hi" x="516" y="238" width="192" height="104" rx="4"/>
-    <text class="pt b" x="612" y="256">one bifactor fit</text>
-    <text class="ps" x="612" y="272">17 factors at once</text>
-    <text class="ps" x="612" y="286">new in v1.4.0</text>
-    <text class="ps" x="612" y="306">each series loads on two:</text>
-    <text class="ps" x="612" y="318">general + its own goal</text>
-    <line class="pa" x1="612" y1="342" x2="612" y2="366" marker-end="url(#ar)"/>
+    <rect class="pbox hi" x="264" y="290" width="192" height="104" rx="4"/>
+    <text class="pt b" x="360" y="308">sixteen separate fits</text>
+    <text class="ps" x="360" y="324">one per goal, 17&ndash;75 series</text>
+    <text class="ps" x="360" y="338">goal 7 too thin to fit</text>
+    <text class="ps" x="360" y="358">a goal's score owes</text>
+    <text class="ps" x="360" y="370">nothing to the other 15</text>
+    <line class="pa" x1="360" y1="394" x2="360" y2="418" marker-end="url(#ar)"/>
 
-    <rect class="pbox out" x="12" y="368" width="192" height="76" rx="4"/>
-    <text class="pt code" x="108" y="386">vsi</text>
-    <text class="ps" x="108" y="402">1,773 rows</text>
-    <text class="ps" x="108" y="416">iso3 &times; year</text>
-    <text class="ps" x="108" y="432">how much it reports overall</text>
+    <rect class="pbox hi" x="516" y="290" width="192" height="104" rx="4"/>
+    <text class="pt b" x="612" y="308">one bifactor fit</text>
+    <text class="ps" x="612" y="324">17 factors at once</text>
+    <text class="ps" x="612" y="338">new in v1.4.0</text>
+    <text class="ps" x="612" y="358">each series loads on two:</text>
+    <text class="ps" x="612" y="370">general + its own goal</text>
+    <line class="pa" x1="612" y1="394" x2="612" y2="418" marker-end="url(#ar)"/>
 
-    <rect class="pbox out" x="264" y="368" width="192" height="76" rx="4"/>
-    <text class="pt code" x="360" y="386">vsi_goal</text>
-    <text class="ps" x="360" y="402">28,368 rows</text>
-    <text class="ps" x="360" y="416">iso3 &times; year &times; goal</text>
-    <text class="ps" x="360" y="432">that goal, overall level in</text>
+    <rect class="pbox out" x="12" y="420" width="192" height="76" rx="4"/>
+    <text class="pt code" x="108" y="438">vsi</text>
+    <text class="ps" x="108" y="454">1,773 rows</text>
+    <text class="ps" x="108" y="468">iso3 &times; year</text>
+    <text class="ps" x="108" y="484">how much it reports overall</text>
 
-    <rect class="pbox out" x="516" y="368" width="192" height="76" rx="4"/>
-    <text class="pt code" x="612" y="386">vsi_goal_relative</text>
-    <text class="ps" x="612" y="402">28,368 rows</text>
-    <text class="ps" x="612" y="416">iso3 &times; year &times; goal</text>
-    <text class="ps" x="612" y="432">that goal, overall level out</text>
+    <rect class="pbox out" x="264" y="420" width="192" height="76" rx="4"/>
+    <text class="pt code" x="360" y="438">vsi_goal</text>
+    <text class="ps" x="360" y="454">28,368 rows</text>
+    <text class="ps" x="360" y="468">iso3 &times; year &times; goal</text>
+    <text class="ps" x="360" y="484">that goal, overall level in</text>
 
-    <text class="pl" x="360" y="470" text-anchor="middle">EVERY SCORE CARRIES ITS OWN STANDARD ERROR</text>
-    <text class="ps" x="108" y="490">median SE 0.11</text>
-    <text class="ps" x="360" y="490">median SE 0.34</text>
-    <text class="ps" x="612" y="490">median SE 0.41</text>
-    <text class="ps" x="360" y="508" style="fill:var(--faint)">goal fits use 17&ndash;75 series rather than 524, so their error bars are about three times wider</text>
+    <rect class="pbox out" x="516" y="420" width="192" height="76" rx="4"/>
+    <text class="pt code" x="612" y="438">vsi_goal_relative</text>
+    <text class="ps" x="612" y="454">28,368 rows</text>
+    <text class="ps" x="612" y="468">iso3 &times; year &times; goal</text>
+    <text class="ps" x="612" y="484">that goal, overall level out</text>
+
+    <text class="pl" x="360" y="522" text-anchor="middle">EVERY SCORE CARRIES ITS OWN STANDARD ERROR</text>
+    <text class="ps" x="108" y="542">median SE 0.11</text>
+    <text class="ps" x="360" y="542">median SE 0.34</text>
+    <text class="ps" x="612" y="542">median SE 0.41</text>
+    <text class="ps" x="360" y="560" style="fill:var(--faint)">goal fits use 17&ndash;75 series rather than 524, so their error bars are about three times wider</text>
   </svg>
   <figcaption>One shared preparation, three model shapes, three score columns. Only the number
   of factors and which series load on them changes between the branches; steps 5 and 6 are
@@ -284,6 +289,18 @@ own weaknesses attached.</p>
       1,179,045 cells, of which <strong>38.2%</strong> are reported. Built once and shared by
       every model, so no two fits can disagree about what the data are.</dd>
     </dl>
+    <p>The rows are fixed first, because every series rule below is computed over these
+    same 1,773 country&ndash;years.</p>
+    <div class="tbl"><table>
+      <thead><tr><th>Rule</th><th>Country&ndash;years (rows)</th><th>Count</th></tr></thead>
+      <tbody>
+        <tr><td class="c">R1.0</td><td>Start: geographies in the UN exports</td><td class="c">260</td></tr>
+        <tr><td class="c">R1.1</td><td>Drop world and regional aggregates (a safeguard: the exports contain none)</td><td class="c">260</td></tr>
+        <tr><td class="c">R1.2</td><td>Drop non&ndash;sovereign geographies: 40 territories and non&ndash;members, 15 residual groupings, 3 defunct entities, 2 sub&ndash;national strata</td><td class="c">200</td></tr>
+        <tr><td class="c">R1.3</td><td>Roll England &amp; Wales, Scotland and Northern Ireland into the UK</td><td class="c">197</td></tr>
+        <tr><td class="c">R1.4</td><td>Keep 2015&ndash;2023</td><td class="c">197 &times; 9 = 1,773</td></tr>
+      </tbody>
+    </table></div>
     <div class="flagbox"><b>The failure this prevents</b>
     <p>Skip it and &ldquo;reporting&rdquo; silently becomes &ldquo;reporting, among countries
     that reported&rdquo; &mdash; the sample defined by the outcome. Everything downstream would
@@ -308,6 +325,17 @@ own weaknesses attached.</p>
       country twice for one reporting decision. 59 such groups of repeats contribute one series
       each.</dd>
     </dl>
+    <div class="tbl"><table>
+      <thead><tr><th>Rule</th><th>Series (columns)</th><th>Count</th></tr></thead>
+      <tbody>
+        <tr><td class="c">R2.0</td><td>Start: unique series in the UN exports (726 counting each goal listing)</td><td class="c">668</td></tr>
+        <tr><td class="c">R2.1</td><td>Drop series with no data in 2015&ndash;2023 (all three begin in 2025&ndash;26)</td><td class="c">665</td></tr>
+        <tr><td class="c">R2.2</td><td>A series listed under several goals becomes one column</td><td class="c">665</td></tr>
+        <tr><td class="c">R2.3</td><td>Drop series reported in under 2% of the 1,773 country&ndash;years</td><td class="c">637</td></tr>
+        <tr><td class="c">R2.4</td><td>Drop series reported in over 98% of the 1,773 country&ndash;years</td><td class="c">607</td></tr>
+        <tr><td class="c">R2.5</td><td>Keep one series per group of repeats (59 groups)</td><td class="c">524</td></tr>
+      </tbody>
+    </table></div>
     <p><strong>Two conditions must both hold before a group is counted as one.</strong> The
     series must be reported, and not reported, together in every one of the 1,773
     country&ndash;years;
@@ -319,7 +347,8 @@ own weaknesses attached.</p>
     <p>Series that merely resemble one another are kept apart, because a country publishing one
     and withholding the other has made a real reporting choice &mdash; exactly the thing being
     measured. The cost of that decision is disclosed in step 10 as weight concentration. The
-    test re&ndash;runs on every fit and halts it if a future data release breaks it.</p></div>
+    test runs in data preparation, and a check before any model is fitted stops the run if a
+    future data release breaks it.</p></div>
   </div>
 </section>
 
