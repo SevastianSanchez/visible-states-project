@@ -13,7 +13,8 @@
 # Scoring the original rows, not the resampled ones, is what makes replicates
 # comparable: the same 1,773 people are scored every time, by different rulers.
 #
-# Settings per METHODS_LOG.md: squarem, prior norm(0,2) on slopes, TOL 1e-3.
+# The model is fit_goal_2pl() from 03_measures/functions/fitting.R, the same
+# function the published fit calls: squarem, prior norm(0,2) on slopes, TOL 1e-3.
 # OUTPUT  03_measures/vsi_goal/validate_measure/output/vsi_goal_bootstrap.csv -- per country-year per
 #         goal: bootstrap SD, and the model SE beside it.
 #
@@ -38,6 +39,7 @@ list2env(model_inputs(
   readRDS(here::here("01_data/processed/grid_model_series.rds")),
   data.table::fread(here::here("01_data/processed/series_goal.csv")),
   min_series_per_goal), environment())
+source(here::here("03_measures/functions/fitting.R"))   # the goal model, shared with build_irt_vsi_goal.R
 set.seed(20261105)   # the seed the published fits used, so they reproduce exactly
 set.seed(20261109)
 
@@ -49,10 +51,6 @@ names(cols) <- goals
 goals <- goals[sapply(cols, length) >= min_series_per_goal]
 msg("bootstrap: ", B, " replicates x ", length(goals), " goals on ", CORES, " cores")
 
-prior_pars <- function(M) { v <- mirt(M, 1, itemtype = "2PL", pars = "values")
-  i <- grepl("^a1$", v$name) & v$est
-  v$prior.type[i] <- "norm"; v$prior_1[i] <- 0; v$prior_2[i] <- 2; v }
-
 CK <- here("01_data/vsi_scores/vsi_goal/boot_ck"); dir.create(CK, showWarnings = FALSE)
 
 one_rep <- function(b) {
@@ -63,9 +61,7 @@ one_rep <- function(b) {
   out <- lapply(goals, function(g) {
     M0 <- resp[, cols[[as.character(g)]], drop = FALSE]
     Mb <- M0[idx, , drop = FALSE]
-    f <- try(suppressWarnings(mirt(Mb, 1, itemtype = "2PL", pars = prior_pars(Mb),
-             verbose = FALSE, accelerate = "squarem", TOL = 1e-3,
-             technical = list(NCYCLES = 5000, warn = FALSE))), silent = TRUE)
+    f <- try(fit_goal_2pl(Mb), silent = TRUE)   # functions/fitting.R: the published model
     if (inherits(f, "try-error")) return(rep(NA_real_, nrow(resp)))
     # score the ORIGINAL rows with this replicate's item parameters
     s <- fscores(f, method = "EAP", response.pattern = M0)[, "F1"]

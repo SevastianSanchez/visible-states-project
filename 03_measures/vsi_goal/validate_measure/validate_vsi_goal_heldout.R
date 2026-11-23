@@ -40,6 +40,7 @@ list2env(model_inputs(
   readRDS(here::here("01_data/processed/grid_model_series.rds")),
   data.table::fread(here::here("01_data/processed/series_goal.csv")),
   min_series_per_goal), environment())
+source(here::here("03_measures/functions/fitting.R"))   # the goal model, shared with build_irt_vsi_goal.R
 set.seed(20261105)   # the seed the published fits used, so they reproduce exactly
 set.seed(20261109)
 
@@ -49,14 +50,8 @@ auc <- function(score, y) {               # rank-based, ties handled
   (sum(r[y == 1]) - n1 * (n1 + 1) / 2) / (n1 * n0)
 }
 
-prior_pars <- function(M) { v <- mirt(M, 1, itemtype = "2PL", pars = "values")
-  i <- grepl("^a1$", v$name) & v$est
-  v$prior.type[i] <- "norm"; v$prior_1[i] <- 0; v$prior_2[i] <- 2; v }
-
 score_on <- function(M) {
-  f <- try(suppressWarnings(mirt(M, 1, itemtype = "2PL", pars = prior_pars(M),
-           verbose = FALSE, accelerate = "squarem", TOL = 1e-3,
-           technical = list(NCYCLES = 5000, warn = FALSE))), silent = TRUE)
+  f <- try(fit_goal_2pl(M), silent = TRUE)   # functions/fitting.R: the published model
   if (inherits(f, "try-error")) return(NULL)
   s <- fscores(f, method = "EAP")[, "F1"]
   s * sign(cor(s, rowSums(M)))

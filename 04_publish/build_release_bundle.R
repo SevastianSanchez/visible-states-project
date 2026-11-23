@@ -9,7 +9,8 @@
 #
 #   1. The VSI bundle -- what most people download:
 #        vsi_scores.csv, vsi_goal_scores.csv, vsi_goal_relative_scores.csv,
-#        goal_diagnostics.csv, DATA_DICTIONARY.md, RELEASE_NOTES.md
+#        goal_diagnostics.csv, grid_model_series.csv, DATA_DICTIONARY.md,
+#        RELEASE_NOTES.md
 #   2. A zip of the full repository at the release's git tag, for anyone who
 #      wants to check or rerun the work. Built with `git archive`, the same way
 #      GitHub builds its "Source code (zip)", so it holds exactly what is
@@ -66,6 +67,13 @@ d <- merge(d, SDG, by = "goal", all.x = TRUE)
 setnames(d, "release", "status")
 setcolorder(d, c("layer", "goal", "goal_name"))
 fwrite(d[order(layer, goal)], file.path(out, "goal_diagnostics.csv"))
+
+# ---- the grid the models are fitted on -------------------------------------------
+# 1,773 country-years x 524 series, 1 = reported, 0 = not, so a reader can see
+# exactly what the scores were estimated from. Same file as
+# 01_data/processed/grid_model_series.rds, written as CSV.
+fwrite(readRDS(here("01_data/processed/grid_model_series.rds")),
+       file.path(out, "grid_model_series.csv"))
 
 # ---- documents -----------------------------------------------------------------
 file.copy(here("04_publish/DATA_DICTIONARY.md"), file.path(out, "DATA_DICTIONARY.md"), overwrite = TRUE)

@@ -28,13 +28,11 @@ msg <- function(...) cat(format(Sys.time(), "[%H:%M:%S] "), ..., "\n", sep = "")
 #   series_goal  series_goal.csv         (each model series and its one goal)
 #   min_series   goals with fewer series than this get no goal factor (rules.R)
 # Returns a list; list2env() puts its parts in the script's environment:
-#   wide         the full grid with keys (the publishable matrix)
 #   keys         iso3 + year, row-aligned with resp
 #   resp         data.frame, one row per country-year, one 0/1 column per model series
 #   p_rep, keep  share of country-years reporting each of the 665 series, and
 #                whether it passed the 2-98% rule
 #   item_goal    the goal assigned to each model series, in resp's column order
-#   shared_log   the series listed under several goals, and the goal each got
 #   spec, spec_levels, spec_idx
 #                the goal factor per series for the bifactor model; goals with
 #                fewer than min_series series (goal 7) are NA = overall factor only
@@ -45,8 +43,6 @@ model_inputs <- function(grid_all, grid_model, series_goal, min_series) {
 
   item_goal <- series_goal[match(colnames(resp), series_code), goal_assigned]
   stopifnot(!any(is.na(item_goal)))
-  series_goal <- copy(series_goal)[, goals_listed := as.character(goals_listed)]
-  shared_log  <- series_goal[grepl("/", goals_listed)]
 
   spec <- item_goal
   general_only <- as.integer(names(which(table(item_goal) < min_series)))
@@ -54,7 +50,7 @@ model_inputs <- function(grid_all, grid_model, series_goal, min_series) {
   spec_levels <- sort(unique(spec[!is.na(spec)]))
   spec_idx    <- match(spec, spec_levels)   # mirt wants 1..K, NA allowed
 
-  list(wide = grid_all, keys = grid_all[, .(iso3, year)], resp = resp,
-       p_rep = p_rep, keep = keep, item_goal = item_goal, shared_log = shared_log,
+  list(keys = grid_all[, .(iso3, year)], resp = resp,
+       p_rep = p_rep, keep = keep, item_goal = item_goal,
        spec = spec, spec_levels = spec_levels, spec_idx = spec_idx)
 }

@@ -69,6 +69,13 @@ nothing is excluded for imprecision.
 | `weight_agency_pct` | Share of the goal's weight from series produced by international agencies rather than countries. High = the score partly records agency publishing, not government reporting |
 | `status` | `release` or `hold_content` |
 
+## `grid_model_series.csv` — the grid the scores are estimated from
+
+One row per country–year (1,773 rows), keyed on `iso3` + `year`, then one column
+per series (524 columns, named by the UN series code): `1` = the country reported
+at least one value for that series that year, `0` = it did not. A blank in the UN
+database counts as `0`. This is exactly what all three models are fitted on.
+
 ## Goals not scored, or held
 
 - **Goal 7 (energy) is not scored** in either goal layer. Only 3 of its series

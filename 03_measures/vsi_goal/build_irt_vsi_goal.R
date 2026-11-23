@@ -20,8 +20,10 @@
 #   held-out test below possible: a goal's score owes nothing to the other 16.
 #
 # WHY THESE SETTINGS
-#   Taken from METHODS_LOG.md, not chosen here. Do not change one without
-#   reading that file; each of these cost hours to establish.
+#   Taken from METHODS_LOG.md, not chosen here, and set in one place:
+#   03_measures/functions/fitting.R, which the bootstrap and held-out checks
+#   also use, so they always refit this exact model. Do not change one without
+#   reading METHODS_LOG.md; each of these cost hours to establish.
 #
 #   accelerate = "squarem"   Binary model. mirt's default Ramsay accelerator
 #                            reaches the same fixed point ~20x slower; it ran
@@ -76,6 +78,7 @@ list2env(model_inputs(
   readRDS(here::here("01_data/processed/grid_model_series.rds")),
   data.table::fread(here::here("01_data/processed/series_goal.csv")),
   min_series_per_goal), environment())
+source(here::here("03_measures/functions/fitting.R"))
 set.seed(20261105)   # the seed the published fits used, so they reproduce exactly
 
 suppressMessages({library(mirt); library(data.table); library(here)})
@@ -87,9 +90,6 @@ prov_path <- here::here("01_data/processed/series_provenance_nature.csv")
 prov <- if (file.exists(prov_path)) data.table::fread(prov_path) else NULL
 
 MIN_SERIES   <- min_series_per_goal   # rules.R: below this a factor is not identified
-TOL          <- 1e-3
-PRIOR_SD     <- 2
-MAX_CYCLES   <- 5000L
 REL_REF      <- 0.70     # reported as a reference point, never applied as a cut
 HOLD_CONTENT <- goals_held   # rules.R: withheld on content grounds
 
@@ -119,14 +119,8 @@ fit_goal <- function(g) {
     return(NULL)
   }
 
-  v <- mirt(M, 1, itemtype = "2PL", pars = "values")
-  i <- grepl("^a1$", v$name) & v$est
-  v$prior.type[i] <- "norm"; v$prior_1[i] <- 0; v$prior_2[i] <- PRIOR_SD
-
   t0 <- Sys.time()
-  f  <- suppressWarnings(mirt(M, 1, itemtype = "2PL", pars = v, verbose = FALSE,
-          accelerate = "squarem", TOL = TOL,
-          technical = list(NCYCLES = MAX_CYCLES, warn = FALSE)))
+  f  <- fit_goal_2pl(M)   # functions/fitting.R
   mins <- as.numeric(difftime(Sys.time(), t0, units = "mins"))
 
   th <- fscores(f, method = "EAP", full.scores.SE = TRUE)
@@ -147,7 +141,7 @@ fit_goal <- function(g) {
   # is the prior working, not divergence. The bifactor's max|a| < 10 rule in
   # METHODS_LOG.md was written for a model where a factor became a copy of a
   # collinear block and slopes ran past 80. See the Nov 9 diagnostic rows.
-  ok <- conv && cyc < MAX_CYCLES && !any(is.na(th[, 2])) && all(th[, 2] > 0)
+  ok <- conv && cyc < goal_max_cycles && !any(is.na(th[, 2])) && all(th[, 2] > 0)
 
   msg(sprintf("  goal %-2d  series %3d  cycles %5d  conv=%-5s  max|a| %5.2f  rel %.3f  medSE %.3f  %.1f min%s",
       g, ncol(M), cyc, conv, amax, rel, median(th[, 2]), mins,
@@ -194,8 +188,8 @@ fit_goal <- function(g) {
 }
 
 # ---- ALL GOALS ---------------------------------------------------------------
-msg("vsi_goal: one 1-factor 2PL per goal | squarem | prior norm(0, ", PRIOR_SD,
-    ") | TOL ", TOL)
+msg("vsi_goal: one 1-factor 2PL per goal | squarem | prior norm(0, ", goal_prior_sd,
+    ") | TOL ", goal_tol)
 
 t_all <- Sys.time()
 res   <- Filter(Negate(is.null), lapply(sort(unique(item_goal)), fit_goal))
@@ -243,9 +237,9 @@ fwrite(data.table(
   goals_skipped   = paste(setdiff(sort(unique(item_goal)), health$goal), collapse = "/"),
   goals_held      = paste(HOLD_CONTENT, collapse = "/"),
   accelerate      = "squarem",
-  prior           = paste0("norm(0,", PRIOR_SD, ") on a1"),
-  tol             = TOL,
-  max_cycles      = MAX_CYCLES,
+  prior           = paste0("norm(0,", goal_prior_sd, ") on a1"),
+  tol             = goal_tol,
+  max_cycles      = goal_max_cycles,
   all_converged   = all(health$converged),
   median_reliability = median(health$reliability),
   min_reliability    = min(health$reliability),

@@ -78,17 +78,14 @@ co[, goal := item_goal[match(series_code, colnames(resp))]]
 co[, p_reported := as.numeric(p_rep[keep][match(series_code, names(p_rep[keep]))])]
 
 # ---- WRITE -------------------------------------------------------------------
-# This script owns irt_response_matrix.rds and irt_series_goal_assignment.csv:
-# both are produced by the shared prep step, and having a single writer keeps
-# to the repo's one-writer-per-file rule. build_irt_vsi_goal.R writes neither.
+# The grid this model is fitted on is 01_data/processed/grid_model_series.rds,
+# and each series' goal is in series_goal.csv. Both are written in
+# 02_processing, so this script writes only the model's own outputs.
 
 msg("writing")
 out <- here("01_data/vsi_scores/vsi")
 
-saveRDS(wide, file.path(out, "irt_response_matrix.rds"))
-fwrite(shared_log, file.path(out, "irt_series_goal_assignment.csv"))
-
-saveRDS(fit,    file.path(out, "irt_vsi_fit.rds"))
+saveRDS(fit,   file.path(out, "irt_vsi_fit.rds"))
 fwrite(scores,  file.path(out, "irt_vsi_scores.csv"))
 saveRDS(scores, file.path(out, "irt_vsi_scores.rds"))
 fwrite(co,      file.path(out, "irt_vsi_item_params.csv"))
